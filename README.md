@@ -92,6 +92,14 @@ may chow. Meld ownership, full turn transitions, kongs, hand ending, round rotat
 snapshots, scene projections, and the rule-pack SPI provider remain release-blocking
 work.
 
+`McrRoundState` now joins those primitives into one validation boundary. It retains
+exact hands, exposed flowers, physical melds with their source discard, rivers,
+the wall, current seat, last draw, reaction window, terminal result, and a monotonic
+revision. Construction rejects a missing or duplicated identity anywhere in the
+144-tile state and verifies live structural hand counts. `McrRoundOutcome` also
+recomputes settlement, so an adapter cannot pair a genuine evaluation with forged
+score deltas. Action transitions are the next migration step.
+
 ## Representation and performance
 
 - Standard tile kinds have stable indexes `0..33`; flowers are `34..41`.

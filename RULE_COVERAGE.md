@@ -105,6 +105,12 @@ exact physical chow/pung/kong alternatives, chow limited to the next player, hu
 priority, pung/kong priority over chow, the single-winner nearest-seat rule, one
 response per seat, immutable timeout passing, and rejection of non-issued choices.
 
+The exact round aggregate now conserves identities across concealed hands, flowers,
+physical melds, rivers, and wall; ties every meld-claimed river tile to exactly one
+claimant meld; checks live structural counts; and binds terminal payments back to
+the engine-issued evaluation. It currently exposes an initial state but no public
+action transition engine.
+
 This does not yet make the repository an installable MahjongPaper rule pack. The
 following remain open: integration of reactions into full turn state,
 chow/pung/kong physical ownership, scored-win construction, exhaustive-wall

@@ -106,8 +106,8 @@ formation, recursive flower replacement, ordinary and back-wall draws, discard
 win evaluation, and exhaustive termination. Invalid or stale actions return the
 unchanged input object with a typed violation. Seats with no legal reaction are
 passed internally, so an unclaimable discard does not allocate an idle timer or
-mailbox round trip. Added kong, robbed-kong arbitration and full match progression
-remain explicit blockers before the SPI provider can claim full-hand coverage.
+mailbox round trip. Canonical snapshots, full match progression and the SPI adapter
+remain explicit blockers before the repository can claim installable rule-pack coverage.
 
 The state also records the dealer's final acquisition during the deal, including
 whether an initial flower replacement supplied it. This supports the Green Book
@@ -115,7 +115,12 @@ whether an initial flower replacement supplied it. This supports the Green Book
 and exact concealed-kong transitions are now implemented; a kong replacement that
 first yields a flower is deliberately classified as `FLOWER_REPLACEMENT`, not
 `KONG_REPLACEMENT`, matching the scoring exception for Out With Replacement Tile.
-Added kong and robbing it remain open.
+Added kong is now a two-phase transition. The fourth tile remains in the
+declarer's exact hand while a hu-only `ADDED_KONG` window is open. If all seats
+pass, the original pung upgrades and a back-wall replacement is drawn. If hu wins
+priority, the pung remains unchanged and the fourth instance moves to a dedicated
+`McrRobbedKongClaim`; it cannot remain duplicated in the declarer's hand. Scoring
+sets `ROBBING_KONG`, and settlement treats the kong declarer as the discarder.
 
 ## Representation and performance
 

@@ -16,16 +16,19 @@ import java.util.Set;
  * a caller from manufacturing a hu or substituting different concealed tiles.
  */
 public final class McrReactionWindow {
+    private final McrReactionOrigin origin;
     private final Wind discarder;
     private final McrTileInstance discard;
     private final Map<Wind, List<McrReaction>> legalOptions;
     private final Map<Wind, McrReaction> decisions;
 
     private McrReactionWindow(
+            McrReactionOrigin origin,
             Wind discarder,
             McrTileInstance discard,
             Map<Wind, List<McrReaction>> legalOptions,
             Map<Wind, McrReaction> decisions) {
+        this.origin = origin;
         this.discarder = discarder;
         this.discard = discard;
         this.legalOptions = legalOptions;
@@ -36,8 +39,23 @@ public final class McrReactionWindow {
             Wind discarder,
             McrTileInstance discard,
             List<McrReaction> legalOptions) {
-        if (discarder == null || discard == null || discard.kind().isFlower()) {
-            throw new IllegalArgumentException("discarder and standard discard are required");
+        return open(McrReactionOrigin.DISCARD, discarder, discard, legalOptions);
+    }
+
+    public static McrReactionWindow openAddedKong(
+            Wind declarer,
+            McrTileInstance addedTile,
+            List<McrReaction> legalHuOptions) {
+        return open(McrReactionOrigin.ADDED_KONG, declarer, addedTile, legalHuOptions);
+    }
+
+    private static McrReactionWindow open(
+            McrReactionOrigin origin,
+            Wind discarder,
+            McrTileInstance discard,
+            List<McrReaction> legalOptions) {
+        if (origin == null || discarder == null || discard == null || discard.kind().isFlower()) {
+            throw new IllegalArgumentException("origin, source seat and standard offered tile are required");
         }
         List<McrReaction> source = legalOptions == null ? List.of() : List.copyOf(legalOptions);
         EnumMap<Wind, ArrayList<McrReaction>> mutable = new EnumMap<>(Wind.class);
@@ -50,6 +68,10 @@ public final class McrReactionWindow {
                     || !reaction.discard().equals(discard)
                     || reaction.type() == McrReactionType.PASS) {
                 throw new IllegalArgumentException("invalid legal reaction option for this discard");
+            }
+            if (origin == McrReactionOrigin.ADDED_KONG
+                    && reaction.type() != McrReactionType.HU) {
+                throw new IllegalArgumentException("only hu may react to an added kong");
             }
             if (reaction.type() == McrReactionType.CHOW
                     && reaction.claimant() != nextSeat(discarder)) {
@@ -66,10 +88,15 @@ public final class McrReactionWindow {
             immutableOptions.put(entry.getKey(), List.copyOf(entry.getValue()));
         }
         return new McrReactionWindow(
+                origin,
                 discarder,
                 discard,
                 Collections.unmodifiableMap(immutableOptions),
                 Map.of());
+    }
+
+    public McrReactionOrigin origin() {
+        return origin;
     }
 
     public Wind discarder() {
@@ -118,6 +145,7 @@ public final class McrReactionWindow {
         updated.putAll(decisions);
         updated.put(seat, reaction);
         return new McrReactionWindow(
+                origin,
                 discarder,
                 discard,
                 legalOptions,

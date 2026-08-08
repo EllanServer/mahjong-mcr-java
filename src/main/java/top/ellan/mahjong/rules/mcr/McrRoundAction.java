@@ -6,7 +6,8 @@ public sealed interface McrRoundAction
                 McrRoundAction.React,
                 McrRoundAction.CloseReactions,
                 McrRoundAction.SelfDrawWin,
-                McrRoundAction.ConcealedKong {
+                McrRoundAction.ConcealedKong,
+                McrRoundAction.AddedKong {
 
     /** Discards one exact physical tile from the current hand. */
     record Discard(Wind seat, McrTileInstance tile) implements McrRoundAction {
@@ -43,6 +44,15 @@ public sealed interface McrRoundAction
             java.util.ArrayList<McrTileInstance> sorted = new java.util.ArrayList<>(tiles);
             sorted.sort(null);
             tiles = java.util.List.copyOf(sorted);
+        }
+    }
+
+    /** Proposes adding one exact concealed tile to an existing exposed pung. */
+    record AddedKong(Wind seat, McrTileInstance tile) implements McrRoundAction {
+        public AddedKong {
+            if (seat == null || tile == null) {
+                throw new IllegalArgumentException("added-kong seat and tile are required");
+            }
         }
     }
 }

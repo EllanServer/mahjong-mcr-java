@@ -123,4 +123,18 @@ class McrReactionWindowTest {
                 Wind.SOUTH, DISCARD,
                 McrTileInstance.of(Tile.M5, 1), McrTileInstance.of(Tile.M5, 1)));
     }
+
+    @Test
+    void addedKongWindowAcceptsOnlyHuOptions() {
+        McrReaction hu = McrReaction.hu(Wind.WEST, DISCARD);
+        McrReactionWindow window = McrReactionWindow.openAddedKong(
+                Wind.EAST, DISCARD, List.of(hu));
+        assertEquals(McrReactionOrigin.ADDED_KONG, window.origin());
+        assertEquals(List.of(hu), window.legalOptions(Wind.WEST));
+
+        McrReaction pung = McrReaction.pung(Wind.WEST, DISCARD,
+                McrTileInstance.of(Tile.M5, 1), McrTileInstance.of(Tile.M5, 2));
+        assertThrows(IllegalArgumentException.class,
+                () -> McrReactionWindow.openAddedKong(Wind.EAST, DISCARD, List.of(pung)));
+    }
 }

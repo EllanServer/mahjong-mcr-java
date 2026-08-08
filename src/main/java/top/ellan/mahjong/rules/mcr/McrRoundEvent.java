@@ -5,6 +5,7 @@ public sealed interface McrRoundEvent
         permits McrRoundEvent.TileDiscarded,
                 McrRoundEvent.ReactionRecorded,
                 McrRoundEvent.DiscardUnclaimed,
+                McrRoundEvent.AddedKongProposed,
                 McrRoundEvent.MeldFormed,
                 McrRoundEvent.TileDrawn,
                 McrRoundEvent.FlowerExposed,
@@ -16,6 +17,8 @@ public sealed interface McrRoundEvent
     record ReactionRecorded(Wind seat, McrReactionType type) implements McrRoundEvent {}
 
     record DiscardUnclaimed(Wind seat, McrTileInstance tile) implements McrRoundEvent {}
+
+    record AddedKongProposed(Wind seat, McrTileInstance tile) implements McrRoundEvent {}
 
     record MeldFormed(Wind seat, McrPhysicalMeld meld) implements McrRoundEvent {}
 

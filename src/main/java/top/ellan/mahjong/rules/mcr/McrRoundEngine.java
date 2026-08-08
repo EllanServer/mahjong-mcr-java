@@ -35,10 +35,52 @@ public final class McrRoundEngine {
             if (action instanceof McrRoundAction.CloseReactions) return closeReactions(state);
             if (action instanceof McrRoundAction.SelfDrawWin win) return selfDrawWin(state, win);
             if (action instanceof McrRoundAction.ConcealedKong kong) return concealedKong(state, kong);
+            if (action instanceof McrRoundAction.AddedKong kong) return addedKong(state, kong);
             return McrRoundTransition.rejected(state, McrRoundViolation.WRONG_PHASE);
         } catch (IllegalArgumentException | IllegalStateException mismatch) {
             return McrRoundTransition.rejected(state, McrRoundViolation.INTERNAL_STATE_MISMATCH);
         }
+    }
+
+    private McrRoundTransition addedKong(
+            McrRoundState state, McrRoundAction.AddedKong action) {
+        if (state.phase() != McrRoundPhase.AWAITING_DISCARD) {
+            return McrRoundTransition.rejected(state, McrRoundViolation.WRONG_PHASE);
+        }
+        if (action.seat() != state.currentSeat()) {
+            return McrRoundTransition.rejected(state, McrRoundViolation.NOT_CURRENT_SEAT);
+        }
+        if (state.lastDraw().isEmpty() || state.wall().isEmpty()
+                || !state.hand(action.seat()).contains(action.tile())
+                || findPung(state.melds(action.seat()), action.tile().kind()) < 0) {
+            return McrRoundTransition.rejected(state, McrRoundViolation.ADDED_KONG_NOT_LEGAL);
+        }
+
+        List<McrReaction> options = generateRobbingKongReactions(
+                state, action.seat(), action.tile());
+        McrReactionWindow window = McrReactionWindow.openAddedKong(
+                action.seat(), action.tile(), options);
+        for (Wind seat : Wind.values()) {
+            if (seat != action.seat() && window.legalOptions(seat).isEmpty()) window = window.pass(seat);
+        }
+        ArrayList<McrRoundEvent> events = new ArrayList<>();
+        events.add(new McrRoundEvent.AddedKongProposed(action.seat(), action.tile()));
+        McrRoundState reacting = new McrRoundState(
+                state.revision() + 1,
+                state.roundWind(),
+                action.seat(),
+                McrRoundPhase.REACTIONS,
+                state.rawHands(),
+                state.rawFlowers(),
+                state.rawMelds(),
+                state.rawRivers(),
+                state.wall(),
+                state.rawLastDraw(),
+                state.rawLastDrawSource(),
+                window,
+                null);
+        if (!window.isClosed()) return McrRoundTransition.accepted(reacting, events);
+        return McrRoundTransition.accepted(resolve(reacting, events), events);
     }
 
     private McrRoundTransition selfDrawWin(
@@ -248,6 +290,15 @@ public final class McrRoundEngine {
 
     private McrRoundState resolve(McrRoundState state, ArrayList<McrRoundEvent> events) {
         McrReactionResolution resolution = state.reactionWindow().orElseThrow().resolution();
+        if (state.reactionWindow().orElseThrow().origin() == McrReactionOrigin.ADDED_KONG) {
+            if (resolution instanceof McrReactionResolution.Win win) {
+                return resolveRobbedKong(state, win.reaction(), events);
+            }
+            if (!(resolution instanceof McrReactionResolution.NoClaim)) {
+                throw new IllegalStateException("added-kong window resolved to a meld claim");
+            }
+            return completeAddedKong(state, events);
+        }
         if (resolution instanceof McrReactionResolution.NoClaim noClaim) {
             return resolveUnclaimed(state, noClaim.nextDrawer(), events);
         }
@@ -256,6 +307,95 @@ public final class McrRoundEngine {
         }
         McrReactionResolution.Win win = (McrReactionResolution.Win) resolution;
         return resolveWin(state, win.reaction(), events);
+    }
+
+    private McrRoundState completeAddedKong(
+            McrRoundState state, ArrayList<McrRoundEvent> events) {
+        McrReactionWindow window = state.reactionWindow().orElseThrow();
+        Wind declarer = window.discarder();
+        McrTileInstance fourthTile = window.discard();
+        EnumMap<Wind, List<McrTileInstance>> hands = mutableSeats(state.rawHands());
+        hands.put(declarer, removeExact(hands.get(declarer), fourthTile));
+
+        EnumMap<Wind, List<McrPhysicalMeld>> melds = mutableSeats(state.rawMelds());
+        ArrayList<McrPhysicalMeld> seatMelds = new ArrayList<>(melds.get(declarer));
+        int pungIndex = findPung(seatMelds, fourthTile.kind());
+        if (pungIndex < 0) throw new IllegalStateException("pending added kong lost its pung");
+        McrPhysicalMeld upgraded = seatMelds.get(pungIndex).addFourth(fourthTile);
+        seatMelds.set(pungIndex, upgraded);
+        melds.put(declarer, List.copyOf(seatMelds));
+        events.add(new McrRoundEvent.MeldFormed(declarer, upgraded));
+
+        DrawResult draw = drawStandard(
+                declarer,
+                hands,
+                state.rawFlowers(),
+                state.wall(),
+                McrDrawSource.KONG_REPLACEMENT,
+                events);
+        if (draw.standardTile == null) {
+            events.add(new McrRoundEvent.ExhaustiveDraw());
+            return new McrRoundState(
+                    state.revision(),
+                    state.roundWind(),
+                    declarer,
+                    McrRoundPhase.ENDED,
+                    draw.hands,
+                    draw.flowers,
+                    melds,
+                    state.rawRivers(),
+                    draw.wall,
+                    null,
+                    null,
+                    null,
+                    new McrRoundOutcome.ExhaustiveDraw());
+        }
+        return new McrRoundState(
+                state.revision(),
+                state.roundWind(),
+                declarer,
+                McrRoundPhase.AWAITING_DISCARD,
+                draw.hands,
+                draw.flowers,
+                melds,
+                state.rawRivers(),
+                draw.wall,
+                draw.standardTile,
+                draw.source,
+                null,
+                null);
+    }
+
+    private McrRoundState resolveRobbedKong(
+            McrRoundState state, McrReaction reaction, ArrayList<McrRoundEvent> events) {
+        McrReactionWindow window = state.reactionWindow().orElseThrow();
+        Wind declarer = window.discarder();
+        McrTileInstance robbedTile = window.discard();
+        WinEvaluation evaluation = evaluateRobbingKong(state, reaction.claimant(), robbedTile);
+        if (!evaluation.legalWin()) throw new IllegalStateException("issued robbing option no longer scores");
+        Payment payment = McrPayments.settle(evaluation, reaction.claimant(), declarer);
+        McrRoundOutcome.Win outcome = new McrRoundOutcome.Win(
+                reaction.claimant(), declarer, evaluation, payment);
+        EnumMap<Wind, List<McrTileInstance>> hands = mutableSeats(state.rawHands());
+        hands.put(declarer, removeExact(hands.get(declarer), robbedTile));
+        McrRobbedKongClaim claim = new McrRobbedKongClaim(
+                declarer, reaction.claimant(), robbedTile);
+        events.add(new McrRoundEvent.RoundWon(outcome));
+        return new McrRoundState(
+                state.revision(),
+                state.roundWind(),
+                reaction.claimant(),
+                McrRoundPhase.ENDED,
+                hands,
+                state.rawFlowers(),
+                state.rawMelds(),
+                state.rawRivers(),
+                state.wall(),
+                null,
+                null,
+                null,
+                claim,
+                outcome);
     }
 
     private McrRoundState resolveUnclaimed(
@@ -422,6 +562,17 @@ public final class McrRoundEngine {
         return List.copyOf(result);
     }
 
+    private List<McrReaction> generateRobbingKongReactions(
+            McrRoundState state, Wind declarer, McrTileInstance addedTile) {
+        ArrayList<McrReaction> result = new ArrayList<>(3);
+        for (Wind seat : Wind.values()) {
+            if (seat == declarer) continue;
+            WinEvaluation evaluation = evaluateRobbingKong(state, seat, addedTile);
+            if (evaluation.legalWin()) result.add(McrReaction.hu(seat, addedTile));
+        }
+        return List.copyOf(result);
+    }
+
     private WinEvaluation evaluateDiscardWin(
             McrRoundState state,
             Map<Wind, List<McrTileInstance>> hands,
@@ -470,6 +621,26 @@ public final class McrRoundEngine {
                 melds,
                 winningTile.kind(),
                 new WinContext(winner, state.roundWind(), WinMethod.SELF_DRAW, flags, flowers)));
+    }
+
+    private WinEvaluation evaluateRobbingKong(
+            McrRoundState state, Wind winner, McrTileInstance robbedTile) {
+        ArrayList<Tile> concealed = new ArrayList<>(state.hand(winner).size());
+        for (McrTileInstance tile : state.hand(winner)) concealed.add(tile.kind());
+        ArrayList<Meld> melds = new ArrayList<>(state.melds(winner).size());
+        for (McrPhysicalMeld meld : state.melds(winner)) melds.add(meld.scoringMeld());
+        ArrayList<Tile> flowers = new ArrayList<>(state.flowers(winner).size());
+        for (McrTileInstance flower : state.flowers(winner)) flowers.add(flower.kind());
+        return scorer.evaluate(new WinInput(
+                TileCounts.of(concealed),
+                melds,
+                robbedTile.kind(),
+                new WinContext(
+                        winner,
+                        state.roundWind(),
+                        WinMethod.DISCARD,
+                        EnumSet.of(WinFlag.ROBBING_KONG),
+                        flowers)));
     }
 
     private static boolean isPublicLastOfKind(McrRoundState state, McrTileInstance winningTile) {
@@ -536,6 +707,15 @@ public final class McrRoundEngine {
         ArrayList<McrTileInstance> result = new ArrayList<>(4);
         for (McrTileInstance tile : hand) if (tile.kind() == kind) result.add(tile);
         return result;
+    }
+
+    private static int findPung(List<McrPhysicalMeld> melds, Tile kind) {
+        for (int index = 0; index < melds.size(); index++) {
+            McrPhysicalMeld meld = melds.get(index);
+            if (meld.origin() == McrMeldOrigin.PUNG
+                    && meld.tiles().getFirst().kind() == kind) return index;
+        }
+        return -1;
     }
 
     private static DrawResult drawStandard(

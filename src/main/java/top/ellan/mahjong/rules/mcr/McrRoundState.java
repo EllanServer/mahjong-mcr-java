@@ -24,6 +24,7 @@ public final class McrRoundState {
     private final McrTileInstance lastDraw;
     private final McrDrawSource lastDrawSource;
     private final McrReactionWindow reactionWindow;
+    private final McrRobbedKongClaim robbedKongClaim;
     private final McrRoundOutcome outcome;
 
     McrRoundState(
@@ -40,6 +41,38 @@ public final class McrRoundState {
             McrDrawSource lastDrawSource,
             McrReactionWindow reactionWindow,
             McrRoundOutcome outcome) {
+        this(
+                revision,
+                roundWind,
+                currentSeat,
+                phase,
+                hands,
+                flowers,
+                melds,
+                rivers,
+                wall,
+                lastDraw,
+                lastDrawSource,
+                reactionWindow,
+                null,
+                outcome);
+    }
+
+    McrRoundState(
+            long revision,
+            Wind roundWind,
+            Wind currentSeat,
+            McrRoundPhase phase,
+            Map<Wind, List<McrTileInstance>> hands,
+            Map<Wind, List<McrTileInstance>> flowers,
+            Map<Wind, List<McrPhysicalMeld>> melds,
+            Map<Wind, List<McrPhysicalDiscard>> rivers,
+            McrWall wall,
+            McrTileInstance lastDraw,
+            McrDrawSource lastDrawSource,
+            McrReactionWindow reactionWindow,
+            McrRobbedKongClaim robbedKongClaim,
+            McrRoundOutcome outcome) {
         if (revision < 0 || roundWind == null || currentSeat == null || phase == null || wall == null) {
             throw new IllegalArgumentException("revision, winds, phase and wall are required");
         }
@@ -55,6 +88,7 @@ public final class McrRoundState {
         this.lastDraw = lastDraw;
         this.lastDrawSource = lastDrawSource;
         this.reactionWindow = reactionWindow;
+        this.robbedKongClaim = robbedKongClaim;
         this.outcome = outcome;
         validate();
     }
@@ -137,6 +171,10 @@ public final class McrRoundState {
         return Optional.ofNullable(outcome);
     }
 
+    public Optional<McrRobbedKongClaim> robbedKongClaim() {
+        return Optional.ofNullable(robbedKongClaim);
+    }
+
     Map<Wind, List<McrTileInstance>> rawHands() {
         return hands;
     }
@@ -169,6 +207,14 @@ public final class McrRoundState {
             throw new IllegalArgumentException("ended phase and outcome must agree");
         }
         if (phase != McrRoundPhase.ENDED) validateLiveStructuralCounts();
+        if (robbedKongClaim != null && phase != McrRoundPhase.ENDED) {
+            throw new IllegalArgumentException("robbed-kong tile may exist only in a terminal state");
+        }
+        boolean robbedKongWin = outcome instanceof McrRoundOutcome.Win win
+                && win.evaluation().hasFan(Fan.QIANGGANGHU);
+        if (robbedKongWin != (robbedKongClaim != null)) {
+            throw new IllegalArgumentException("Robbing The Kong fan and physical claim must agree");
+        }
 
         boolean[] placed = new boolean[McrTileInstance.PHYSICAL_TILE_COUNT];
         McrPhysicalDiscard pending = null;
@@ -203,14 +249,23 @@ public final class McrRoundState {
             }
         }
         for (int i = 0; i < wall.remaining(); i++) mark(placed, wall.peekAt(i), "wall");
+        if (robbedKongClaim != null) mark(placed, robbedKongClaim.tile(), "robbed-kong claim");
         for (int id = 0; id < placed.length; id++) {
             if (!placed[id]) throw new IllegalArgumentException("physical tile is not placed: " + id);
         }
 
         if (reactionWindow != null) {
-            if (pending == null || pending.sourceSeat() != reactionWindow.discarder()
-                    || !pending.tile().equals(reactionWindow.discard())) {
-                throw new IllegalArgumentException("reaction window does not match pending river tile");
+            if (reactionWindow.origin() == McrReactionOrigin.DISCARD) {
+                if (pending == null || pending.sourceSeat() != reactionWindow.discarder()
+                        || !pending.tile().equals(reactionWindow.discard())) {
+                    throw new IllegalArgumentException("reaction window does not match pending river tile");
+                }
+            } else {
+                if (pending != null || currentSeat != reactionWindow.discarder()
+                        || !hand(currentSeat).contains(reactionWindow.discard())
+                        || matchingPungCount(currentSeat, reactionWindow.discard().kind()) != 1) {
+                    throw new IllegalArgumentException("added-kong window does not match hand and pung state");
+                }
             }
             for (Wind seat : Wind.values()) {
                 if (seat == reactionWindow.discarder()) continue;
@@ -229,16 +284,41 @@ public final class McrRoundState {
         if (lastDraw != null && !hand(currentSeat).contains(lastDraw)) {
             throw new IllegalArgumentException("last draw must remain in the current hand");
         }
+        if (robbedKongClaim != null) validateRobbedKongOutcome();
     }
 
     private void validateLiveStructuralCounts() {
         for (Wind seat : Wind.values()) {
             int structural = hand(seat).size() + 3 * melds(seat).size();
-            int expected = phase == McrRoundPhase.AWAITING_DISCARD && seat == currentSeat ? 14 : 13;
+            boolean pendingAddedKong = phase == McrRoundPhase.REACTIONS
+                    && reactionWindow != null
+                    && reactionWindow.origin() == McrReactionOrigin.ADDED_KONG
+                    && seat == currentSeat;
+            int expected = (phase == McrRoundPhase.AWAITING_DISCARD && seat == currentSeat)
+                    || pendingAddedKong ? 14 : 13;
             if (structural != expected) {
                 throw new IllegalArgumentException(
                         seat + " has structural tile count " + structural + ", expected " + expected);
             }
+        }
+    }
+
+    private int matchingPungCount(Wind owner, Tile kind) {
+        int matches = 0;
+        for (McrPhysicalMeld meld : melds(owner)) {
+            if (meld.origin() == McrMeldOrigin.PUNG
+                    && meld.tiles().getFirst().kind() == kind) matches++;
+        }
+        return matches;
+    }
+
+    private void validateRobbedKongOutcome() {
+        if (!(outcome instanceof McrRoundOutcome.Win win)
+                || win.winner() != robbedKongClaim.winner()
+                || win.discarder() != robbedKongClaim.sourceSeat()
+                || win.evaluation().winningTile() != robbedKongClaim.tile().kind()
+                || !win.evaluation().hasFan(Fan.QIANGGANGHU)) {
+            throw new IllegalArgumentException("robbed-kong placement and win outcome disagree");
         }
     }
 

@@ -132,7 +132,7 @@ Schema-1 round snapshots cover initial, open-reaction and scored terminal states
 The codec is bounded, versioned and canonical; it authenticates SHA-256, rejects
 unknown enums/counts/trailing data, reconstructs payments from the typed evaluation
 rather than persisted deltas, reruns 144-tile invariants, and uses no Java native
-serialization. Match-level snapshot coverage for cumulative scores remains open.
+serialization.
 
 Privacy projection covers all 144 identities exactly once with per-hand opaque IDs,
 no fixed point to the physical-ID mapping, hidden faces absent rather than masked,
@@ -150,5 +150,10 @@ prevalent wind, all four prevalent winds, unconditional rightward dealer rotatio
 fixed-player score translation, a 16-hand ceiling, and actor-submitted timed ending
 only after the current hand completes.
 
+Schema-1 match snapshots bind the current exact hand to match revision, hand seed,
+rotation, every typed historical outcome, fixed-player deltas and cumulative score.
+Restore authenticates the outer and nested payloads, rejects trailing/non-canonical
+bytes, recomputes payments, and reruns complete-game rotation and zero-sum checks.
+
 This does not yet make the repository an installable MahjongPaper rule pack. The
-remaining structural work is match snapshots and the stable SPI provider boundary.
+remaining structural work is the stable SPI provider boundary.

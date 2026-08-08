@@ -254,7 +254,7 @@ public final class McrRoundSnapshotCodec {
                 readTiles(input, 3, "reaction concealed tiles"));
     }
 
-    private static void writeOutcome(DataOutputStream output, McrRoundOutcome outcome)
+    static void writeOutcome(DataOutputStream output, McrRoundOutcome outcome)
             throws IOException {
         if (outcome == null) {
             output.writeByte(0);
@@ -269,7 +269,7 @@ public final class McrRoundSnapshotCodec {
         }
     }
 
-    private static McrRoundOutcome readOutcome(DataInputStream input) throws IOException {
+    static McrRoundOutcome readOutcome(DataInputStream input) throws IOException {
         int kind = input.readUnsignedByte();
         if (kind == 0) return null;
         if (kind == 1) return new McrRoundOutcome.ExhaustiveDraw();

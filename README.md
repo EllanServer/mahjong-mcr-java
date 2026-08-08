@@ -145,6 +145,11 @@ cumulative zero-sum payments remain keyed by each player's fixed initial seat. A
 tournament deadline can end the session only between hands; no rule code reads a
 wall clock.
 
+`McrMatchSnapshotCodec` wraps the exact current-hand payload with match revision,
+rotation, fixed-player cumulative score and every completed result. The schema is
+bounded, canonical and SHA-256 authenticated; restore rebuilds typed outcomes and
+payments and reruns both hand and complete-game invariants.
+
 ## Representation and performance
 
 - Standard tile kinds have stable indexes `0..33`; flowers are `34..41`.

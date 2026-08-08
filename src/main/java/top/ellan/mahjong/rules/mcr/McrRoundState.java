@@ -22,6 +22,7 @@ public final class McrRoundState {
     private final Map<Wind, List<McrPhysicalDiscard>> rivers;
     private final McrWall wall;
     private final McrTileInstance lastDraw;
+    private final McrDrawSource lastDrawSource;
     private final McrReactionWindow reactionWindow;
     private final McrRoundOutcome outcome;
 
@@ -36,6 +37,7 @@ public final class McrRoundState {
             Map<Wind, List<McrPhysicalDiscard>> rivers,
             McrWall wall,
             McrTileInstance lastDraw,
+            McrDrawSource lastDrawSource,
             McrReactionWindow reactionWindow,
             McrRoundOutcome outcome) {
         if (revision < 0 || roundWind == null || currentSeat == null || phase == null || wall == null) {
@@ -51,6 +53,7 @@ public final class McrRoundState {
         this.rivers = copySeats(rivers, "rivers");
         this.wall = wall;
         this.lastDraw = lastDraw;
+        this.lastDrawSource = lastDrawSource;
         this.reactionWindow = reactionWindow;
         this.outcome = outcome;
         validate();
@@ -76,6 +79,7 @@ public final class McrRoundState {
                 melds,
                 rivers,
                 deal.wall(),
+                null,
                 null,
                 null,
                 null);
@@ -121,6 +125,10 @@ public final class McrRoundState {
         return Optional.ofNullable(lastDraw);
     }
 
+    public Optional<McrDrawSource> lastDrawSource() {
+        return Optional.ofNullable(lastDrawSource);
+    }
+
     public Optional<McrReactionWindow> reactionWindow() {
         return Optional.ofNullable(reactionWindow);
     }
@@ -147,6 +155,10 @@ public final class McrRoundState {
 
     McrTileInstance rawLastDraw() {
         return lastDraw;
+    }
+
+    McrDrawSource rawLastDrawSource() {
+        return lastDrawSource;
     }
 
     private void validate() {
@@ -200,8 +212,19 @@ public final class McrRoundState {
                     || !pending.tile().equals(reactionWindow.discard())) {
                 throw new IllegalArgumentException("reaction window does not match pending river tile");
             }
+            for (Wind seat : Wind.values()) {
+                if (seat == reactionWindow.discarder()) continue;
+                for (McrReaction option : reactionWindow.legalOptions(seat)) {
+                    if (!hand(seat).containsAll(option.concealedTiles())) {
+                        throw new IllegalArgumentException("reaction option consumes a tile absent from its hand");
+                    }
+                }
+            }
         } else if (pending != null) {
             throw new IllegalArgumentException("pending discard requires a reaction window");
+        }
+        if ((lastDraw == null) != (lastDrawSource == null)) {
+            throw new IllegalArgumentException("last draw and its source must be present together");
         }
         if (lastDraw != null && !hand(currentSeat).contains(lastDraw)) {
             throw new IllegalArgumentException("last draw must remain in the current hand");

@@ -100,6 +100,15 @@ revision. Construction rejects a missing or duplicated identity anywhere in the
 recomputes settlement, so an adapter cannot pair a genuine evaluation with forged
 score deltas. Action transitions are the next migration step.
 
+`McrRoundEngine` now provides the first atomic action slice: exact discard,
+generated discard reactions, one-shot reaction timeout, chow/pung/direct-kong
+formation, recursive flower replacement, ordinary and back-wall draws, discard
+win evaluation, and exhaustive termination. Invalid or stale actions return the
+unchanged input object with a typed violation. Seats with no legal reaction are
+passed internally, so an unclaimable discard does not allocate an idle timer or
+mailbox round trip. Self draw, concealed/added kong and robbed-kong transitions
+remain explicit blockers before the SPI provider can claim full-hand coverage.
+
 ## Representation and performance
 
 - Standard tile kinds have stable indexes `0..33`; flowers are `34..41`.

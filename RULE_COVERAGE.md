@@ -111,6 +111,15 @@ claimant meld; checks live structural counts; and binds terminal payments back t
 the engine-issued evaluation. It currently exposes an initial state but no public
 action transition engine.
 
+The first transition slice now applies exact discards, generates physical
+chow/pung/direct-kong alternatives, auto-passes seats with no option, resolves
+the fixed priority window, draws from the correct wall end, recursively exposes
+replacement flowers, scores a single discard winner, and returns typed zero-side-
+effect rejections. Tests include unclaimed continuation, exact chow, direct-kong
+flower chaining, legal hu settlement, revision changes, and rejected-state identity.
+Self draw, concealed kong, added kong/robbing, and full hand/match progression remain
+open.
+
 This does not yet make the repository an installable MahjongPaper rule pack. The
 following remain open: integration of reactions into full turn state,
 chow/pung/kong physical ownership, scored-win construction, exhaustive-wall

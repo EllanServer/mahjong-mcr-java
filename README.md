@@ -88,8 +88,8 @@ it accepts only exact legal alternatives issued by the rules engine, collects on
 immutable decision per opponent, and applies Green Book sections 3.6.6--3.6.8 and
 3.7.1--3.7.2.4. Hu beats every meld; when several players call hu, only the player
 nearest after the discarder wins; pung/kong beats chow; and only the next player
-may chow. Match rotation, scene projections and the rule-pack SPI provider remain
-release-blocking work.
+may chow. Match rotation, legal-action projection and the rule-pack SPI provider
+remain release-blocking work.
 
 `McrRoundState` now joins those primitives into one validation boundary. It retains
 exact hands, exposed flowers, physical melds with their source discard, rivers,
@@ -105,7 +105,7 @@ formation, recursive flower replacement, ordinary and back-wall draws, discard
 win evaluation, and exhaustive termination. Invalid or stale actions return the
 unchanged input object with a typed violation. Seats with no legal reaction are
 passed internally, so an unclaimable discard does not allocate an idle timer or
-mailbox round trip. Full match progression, privacy-safe projections and the SPI
+mailbox round trip. Full match progression, legal-action projection and the SPI
 adapter remain blockers before the repository can claim installable rule-pack coverage.
 
 The state also records the dealer's final acquisition during the deal, including
@@ -126,6 +126,13 @@ and decision, draw source, scored outcome, and robbed-kong placement into a boun
 schema-1 binary payload with SHA-256. Restore reconstructs typed objects, reruns all
 round invariants, and requires byte-for-byte canonical re-encoding. Payload arrays
 are defensive copies and Java native serialization is not used.
+
+`McrViewProjector` creates a 144-node public view and a seat-authorized private
+overlay. Per-hand Sattolo projection IDs are deterministic but never equal the raw
+physical ID and change with the hand salt. Wall and concealed nodes carry no face;
+the private overlay reveals only its viewer's hand. At a win, only the winner's
+concealed tiles become public, while non-winners remain hidden. Live concealed
+kongs stay face-down and are revealed only after the hand ends.
 
 ## Representation and performance
 

@@ -83,9 +83,14 @@ is itself a flower is exposed and replaced again from the back. The resulting
 hand, and exposes no mutable collection.
 
 This is deliberately a physical-state foundation, not yet a claim of a complete
-MCR match implementation. Discard reactions, meld ownership, kongs, hand ending,
-round rotation, snapshots, scene projections, and the rule-pack SPI provider remain
-release-blocking work.
+MCR match implementation. `McrReactionWindow` now supplies the next foundation:
+it accepts only exact legal alternatives issued by the rules engine, collects one
+immutable decision per opponent, and applies Green Book sections 3.6.6--3.6.8 and
+3.7.1--3.7.2.4. Hu beats every meld; when several players call hu, only the player
+nearest after the discarder wins; pung/kong beats chow; and only the next player
+may chow. Meld ownership, full turn transitions, kongs, hand ending, round rotation,
+snapshots, scene projections, and the rule-pack SPI provider remain release-blocking
+work.
 
 ## Representation and performance
 

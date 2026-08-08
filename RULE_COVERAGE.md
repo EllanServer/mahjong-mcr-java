@@ -100,8 +100,14 @@ flower replacement from the back of the wall. Tests cover identity conservation,
 the dealer's one-and-three allocation, two-ended draw direction, recursive flower
 replacement, malformed wall rejection, and seeded repeatability.
 
+The discard reaction primitive covers Green Book 3.6.6--3.6.8 and 3.7.1--3.7.2.4:
+exact physical chow/pung/kong alternatives, chow limited to the next player, hu
+priority, pung/kong priority over chow, the single-winner nearest-seat rule, one
+response per seat, immutable timeout passing, and rejection of non-issued choices.
+
 This does not yet make the repository an installable MahjongPaper rule pack. The
-following remain open: turn/reaction state, chow/pung/kong physical ownership,
-win arbitration, exhaustive-wall handling, round and match progression, canonical
+following remain open: integration of reactions into full turn state,
+chow/pung/kong physical ownership, scored-win construction, exhaustive-wall
+handling, round and match progression, canonical
 snapshot encoding, public/private projections, legal action tokens, and the stable
 SPI provider boundary.

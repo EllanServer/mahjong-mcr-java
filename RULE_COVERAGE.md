@@ -116,7 +116,6 @@ the fixed priority window, draws from the correct wall end, recursively exposes
 replacement flowers, scores a single discard winner, and returns typed zero-side-
 effect rejections. Tests include unclaimed continuation, exact chow, direct-kong
 flower chaining, legal hu settlement, revision changes, and rejected-state identity.
-Full match progression remains open.
 
 Self draw now covers both ordinary/replacement draws and the dealer's final initial
 acquisition, while concealed kong consumes four exact instances and recursively
@@ -133,7 +132,7 @@ Schema-1 round snapshots cover initial, open-reaction and scored terminal states
 The codec is bounded, versioned and canonical; it authenticates SHA-256, rejects
 unknown enums/counts/trailing data, reconstructs payments from the typed evaluation
 rather than persisted deltas, reruns 144-tile invariants, and uses no Java native
-serialization. Match-level seat rotation and cumulative-score snapshots remain open.
+serialization. Match-level snapshot coverage for cumulative scores remains open.
 
 Privacy projection covers all 144 identities exactly once with per-hand opaque IDs,
 no fixed point to the physical-ID mapping, hidden faces absent rather than masked,
@@ -146,6 +145,10 @@ concealed/added kongs, the reaction window's issued alternatives, pass, one-resp
 enforcement, and an actor-only timeout command. All returned commands are checked
 against the same immutable transition boundary in regression tests.
 
+Complete-game progression covers Green Book 3.4.2--3.4.5 and 3.4.8: four hands per
+prevalent wind, all four prevalent winds, unconditional rightward dealer rotation,
+fixed-player score translation, a 16-hand ceiling, and actor-submitted timed ending
+only after the current hand completes.
+
 This does not yet make the repository an installable MahjongPaper rule pack. The
-remaining structural work is match-level seat/round progression and cumulative
-results, match snapshots, and the stable SPI provider boundary.
+remaining structural work is match snapshots and the stable SPI provider boundary.

@@ -88,8 +88,7 @@ it accepts only exact legal alternatives issued by the rules engine, collects on
 immutable decision per opponent, and applies Green Book sections 3.6.6--3.6.8 and
 3.7.1--3.7.2.4. Hu beats every meld; when several players call hu, only the player
 nearest after the discarder wins; pung/kong beats chow; and only the next player
-may chow. Match rotation and the rule-pack SPI provider remain release-blocking
-work.
+may chow. The rule-pack SPI provider remains release-blocking work.
 
 `McrRoundState` now joins those primitives into one validation boundary. It retains
 exact hands, exposed flowers, physical melds with their source discard, rivers,
@@ -105,8 +104,8 @@ formation, recursive flower replacement, ordinary and back-wall draws, discard
 win evaluation, and exhaustive termination. Invalid or stale actions return the
 unchanged input object with a typed violation. Seats with no legal reaction are
 passed internally, so an unclaimable discard does not allocate an idle timer or
-mailbox round trip. Full match progression and the SPI adapter remain blockers
-before the repository can claim installable rule-pack coverage.
+mailbox round trip. The SPI adapter remains a blocker before the repository can
+claim installable rule-pack coverage.
 
 The state also records the dealer's final acquisition during the deal, including
 whether an initial flower replacement supplied it. This supports the Green Book
@@ -138,6 +137,13 @@ kongs stay face-down and are revealed only after the hand ends.
 issued reaction alternatives and pass using those opaque projection IDs. A
 responder disappears from the action list after committing once. Reaction timeout
 is a separate actor-owned command and is never presented as a player action.
+
+`McrMatchEngine` implements the Green Book complete-game rotation independently of
+platform players: four hands per prevalent wind and East/South/West/North rounds,
+for 16 hands total. Dealer passes right after every hand regardless of winner, while
+cumulative zero-sum payments remain keyed by each player's fixed initial seat. A
+tournament deadline can end the session only between hands; no rule code reads a
+wall clock.
 
 ## Representation and performance
 

@@ -88,8 +88,8 @@ it accepts only exact legal alternatives issued by the rules engine, collects on
 immutable decision per opponent, and applies Green Book sections 3.6.6--3.6.8 and
 3.7.1--3.7.2.4. Hu beats every meld; when several players call hu, only the player
 nearest after the discarder wins; pung/kong beats chow; and only the next player
-may chow. Match rotation, legal-action projection and the rule-pack SPI provider
-remain release-blocking work.
+may chow. Match rotation and the rule-pack SPI provider remain release-blocking
+work.
 
 `McrRoundState` now joins those primitives into one validation boundary. It retains
 exact hands, exposed flowers, physical melds with their source discard, rivers,
@@ -105,8 +105,8 @@ formation, recursive flower replacement, ordinary and back-wall draws, discard
 win evaluation, and exhaustive termination. Invalid or stale actions return the
 unchanged input object with a typed violation. Seats with no legal reaction are
 passed internally, so an unclaimable discard does not allocate an idle timer or
-mailbox round trip. Full match progression, legal-action projection and the SPI
-adapter remain blockers before the repository can claim installable rule-pack coverage.
+mailbox round trip. Full match progression and the SPI adapter remain blockers
+before the repository can claim installable rule-pack coverage.
 
 The state also records the dealer's final acquisition during the deal, including
 whether an initial flower replacement supplied it. This supports the Green Book
@@ -133,6 +133,11 @@ physical ID and change with the hand salt. Wall and concealed nodes carry no fac
 the private overlay reveals only its viewer's hand. At a win, only the winner's
 concealed tiles become public, while non-winners remain hidden. Live concealed
 kongs stay face-down and are revealed only after the hand ends.
+
+`McrLegalActionGenerator` exposes exact discards, self draw, concealed/added kongs,
+issued reaction alternatives and pass using those opaque projection IDs. A
+responder disappears from the action list after committing once. Reaction timeout
+is a separate actor-owned command and is never presented as a player action.
 
 ## Representation and performance
 

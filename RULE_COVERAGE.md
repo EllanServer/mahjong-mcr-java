@@ -116,7 +116,7 @@ the fixed priority window, draws from the correct wall end, recursively exposes
 replacement flowers, scores a single discard winner, and returns typed zero-side-
 effect rejections. Tests include unclaimed continuation, exact chow, direct-kong
 flower chaining, legal hu settlement, revision changes, and rejected-state identity.
-Legal-action projection and full match progression remain open.
+Full match progression remains open.
 
 Self draw now covers both ordinary/replacement draws and the dealer's final initial
 acquisition, while concealed kong consumes four exact instances and recursively
@@ -141,6 +141,11 @@ an authorized own-hand overlay, winner-only terminal hand reveal, face-down live
 concealed kongs, public flowers/rivers, and robbed-kong placement. Packet-level
 integration validation remains a core-plugin acceptance test.
 
+Legal-action projection covers exact opaque discards, legal self draw, exact
+concealed/added kongs, the reaction window's issued alternatives, pass, one-response
+enforcement, and an actor-only timeout command. All returned commands are checked
+against the same immutable transition boundary in regression tests.
+
 This does not yet make the repository an installable MahjongPaper rule pack. The
 remaining structural work is match-level seat/round progression and cumulative
-results, legal action tokens, match snapshots, and the stable SPI provider boundary.
+results, match snapshots, and the stable SPI provider boundary.

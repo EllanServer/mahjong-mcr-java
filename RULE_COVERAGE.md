@@ -155,5 +155,9 @@ rotation, every typed historical outcome, fixed-player deltas and cumulative sco
 Restore authenticates the outer and nested payloads, rejects trailing/non-canonical
 bytes, recomputes payments, and reruns complete-game rotation and zero-sum checks.
 
-This does not yet make the repository an installable MahjongPaper rule pack. The
-remaining structural work is the stable SPI provider boundary.
+The repository now implements the stable SPI provider boundary and reusable TCK,
+including compile-only parent-loaded SPI isolation, opaque actions, authorized
+views, canonical events, identity-bound snapshots, ServiceLoader metadata and the
+static MCR asset manifest. Official release remains blocked by the independent
+81-fan certification corpus described above, packet-level privacy integration,
+signing and publication through the official registry.

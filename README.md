@@ -82,13 +82,13 @@ is itself a flower is exposed and replaced again from the back. The resulting
 `McrInitialDeal` validates all 144 identities, contains no flower in a concealed
 hand, and exposes no mutable collection.
 
-This is deliberately a physical-state foundation, not yet a claim of a complete
-MCR match implementation. `McrReactionWindow` now supplies the next foundation:
+The exact physical state is the foundation of the complete-game implementation.
+`McrReactionWindow` accepts only alternatives issued by the rules engine:
 it accepts only exact legal alternatives issued by the rules engine, collects one
 immutable decision per opponent, and applies Green Book sections 3.6.6--3.6.8 and
 3.7.1--3.7.2.4. Hu beats every meld; when several players call hu, only the player
 nearest after the discarder wins; pung/kong beats chow; and only the next player
-may chow. The rule-pack SPI provider remains release-blocking work.
+may chow.
 
 `McrRoundState` now joins those primitives into one validation boundary. It retains
 exact hands, exposed flowers, physical melds with their source discard, rivers,
@@ -104,8 +104,7 @@ formation, recursive flower replacement, ordinary and back-wall draws, discard
 win evaluation, and exhaustive termination. Invalid or stale actions return the
 unchanged input object with a typed violation. Seats with no legal reaction are
 passed internally, so an unclaimable discard does not allocate an idle timer or
-mailbox round trip. The SPI adapter remains a blocker before the repository can
-claim installable rule-pack coverage.
+mailbox round trip.
 
 The state also records the dealer's final acquisition during the deal, including
 whether an initial flower replacement supplied it. This supports the Green Book
@@ -149,6 +148,14 @@ wall clock.
 rotation, fixed-player cumulative score and every completed result. The schema is
 bounded, canonical and SHA-256 authenticated; restore rebuilds typed outcomes and
 payments and reruns both hand and complete-game invariants.
+
+`McrRulePackProvider` supplies the parent-loaded MahjongPaper SPI through
+`ServiceLoader`: deterministic match creation, player-authorized opaque actions,
+public/private views, canonical events and identity-bound snapshots. The rule-pack
+JAR keeps `mahjong-rule-spi` compile-only, carries its static descriptor and MCR
+tile manifest, and is verified against the reusable TCK built from pinned
+MahjongEngine commit `242b48024a73364cfb614287c4c6d9ed224a862b` in GitHub Actions.
+It is an installable candidate, not a signed or independently certified release.
 
 ## Representation and performance
 

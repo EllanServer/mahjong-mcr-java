@@ -40,8 +40,16 @@ public final class McrWall {
         if (tiles == null || tiles.size() != McrTileInstance.PHYSICAL_TILE_COUNT) {
             throw new IllegalArgumentException("a complete MCR wall must contain exactly 144 tiles");
         }
+        return fromRemainingOrder(tiles);
+    }
+
+    /** Restores the exact remaining slice of a previously validated round snapshot. */
+    public static McrWall fromRemainingOrder(List<McrTileInstance> tiles) {
+        if (tiles == null || tiles.size() > McrTileInstance.PHYSICAL_TILE_COUNT) {
+            throw new IllegalArgumentException("remaining MCR wall must contain at most 144 tiles");
+        }
         short[] ids = new short[tiles.size()];
-        boolean[] seen = new boolean[tiles.size()];
+        boolean[] seen = new boolean[McrTileInstance.PHYSICAL_TILE_COUNT];
         for (int i = 0; i < tiles.size(); i++) {
             McrTileInstance tile = tiles.get(i);
             if (tile == null) throw new IllegalArgumentException("wall cannot contain null tiles");

@@ -88,9 +88,8 @@ it accepts only exact legal alternatives issued by the rules engine, collects on
 immutable decision per opponent, and applies Green Book sections 3.6.6--3.6.8 and
 3.7.1--3.7.2.4. Hu beats every meld; when several players call hu, only the player
 nearest after the discarder wins; pung/kong beats chow; and only the next player
-may chow. Meld ownership, full turn transitions, kongs, hand ending, round rotation,
-snapshots, scene projections, and the rule-pack SPI provider remain release-blocking
-work.
+may chow. Match rotation, scene projections and the rule-pack SPI provider remain
+release-blocking work.
 
 `McrRoundState` now joins those primitives into one validation boundary. It retains
 exact hands, exposed flowers, physical melds with their source discard, rivers,
@@ -106,8 +105,8 @@ formation, recursive flower replacement, ordinary and back-wall draws, discard
 win evaluation, and exhaustive termination. Invalid or stale actions return the
 unchanged input object with a typed violation. Seats with no legal reaction are
 passed internally, so an unclaimable discard does not allocate an idle timer or
-mailbox round trip. Canonical snapshots, full match progression and the SPI adapter
-remain explicit blockers before the repository can claim installable rule-pack coverage.
+mailbox round trip. Full match progression, privacy-safe projections and the SPI
+adapter remain blockers before the repository can claim installable rule-pack coverage.
 
 The state also records the dealer's final acquisition during the deal, including
 whether an initial flower replacement supplied it. This supports the Green Book
@@ -121,6 +120,12 @@ pass, the original pung upgrades and a back-wall replacement is drawn. If hu win
 priority, the pung remains unchanged and the fourth instance moves to a dedicated
 `McrRobbedKongClaim`; it cannot remain duplicated in the declarer's hand. Scoring
 sets `ROBBING_KONG`, and settlement treats the kong declarer as the discarder.
+
+`McrRoundSnapshotCodec` now encodes every exact zone, wall order, reaction option
+and decision, draw source, scored outcome, and robbed-kong placement into a bounded
+schema-1 binary payload with SHA-256. Restore reconstructs typed objects, reruns all
+round invariants, and requires byte-for-byte canonical re-encoding. Payload arrays
+are defensive copies and Java native serialization is not used.
 
 ## Representation and performance
 

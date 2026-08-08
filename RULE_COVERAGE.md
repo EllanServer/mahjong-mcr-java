@@ -108,8 +108,7 @@ response per seat, immutable timeout passing, and rejection of non-issued choice
 The exact round aggregate now conserves identities across concealed hands, flowers,
 physical melds, rivers, and wall; ties every meld-claimed river tile to exactly one
 claimant meld; checks live structural counts; and binds terminal payments back to
-the engine-issued evaluation. It currently exposes an initial state but no public
-action transition engine.
+the engine-issued evaluation.
 
 The first transition slice now applies exact discards, generates physical
 chow/pung/direct-kong alternatives, auto-passes seats with no option, resolves
@@ -117,8 +116,8 @@ the fixed priority window, draws from the correct wall end, recursively exposes
 replacement flowers, scores a single discard winner, and returns typed zero-side-
 effect rejections. Tests include unclaimed continuation, exact chow, direct-kong
 flower chaining, legal hu settlement, revision changes, and rejected-state identity.
-Canonical snapshots, public/private projections, legal-action projection and full
-match progression remain open.
+Public/private projections, legal-action projection and full match progression
+remain open.
 
 Self draw now covers both ordinary/replacement draws and the dealer's final initial
 acquisition, while concealed kong consumes four exact instances and recursively
@@ -131,9 +130,13 @@ rejection, hu-only alternatives, deferred pung upgrade, back-wall replacement,
 robbed-tile removal, preservation of the original pung, typed physical win claim,
 Robbing The Kong fan, and zero-sum discard-style settlement.
 
+Schema-1 round snapshots cover initial, open-reaction and scored terminal states.
+The codec is bounded, versioned and canonical; it authenticates SHA-256, rejects
+unknown enums/counts/trailing data, reconstructs payments from the typed evaluation
+rather than persisted deltas, reruns 144-tile invariants, and uses no Java native
+serialization. Match-level seat rotation and cumulative-score snapshots remain open.
+
 This does not yet make the repository an installable MahjongPaper rule pack. The
-following remain open: integration of reactions into full turn state,
-chow/pung/kong physical ownership, scored-win construction, exhaustive-wall
-handling, round and match progression, canonical
-snapshot encoding, public/private projections, legal action tokens, and the stable
-SPI provider boundary.
+remaining structural work is match-level seat/round progression and cumulative
+results, public/private projections, legal action tokens, match snapshots, and the
+stable SPI provider boundary.

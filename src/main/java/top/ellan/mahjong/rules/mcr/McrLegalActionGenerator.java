@@ -75,29 +75,25 @@ public final class McrLegalActionGenerator {
             McrProjectionIds ids,
             List<McrLegalAction> result) {
         if (state.lastDraw().isEmpty() || state.wall().isEmpty()) return;
-        @SuppressWarnings("unchecked")
-        ArrayList<McrTileInstance>[] byKind = new ArrayList[Tile.STANDARD_KIND_COUNT];
+        McrTileInstance[][] byKind = new McrTileInstance[Tile.STANDARD_KIND_COUNT][4];
+        byte[] copyCounts = new byte[Tile.STANDARD_KIND_COUNT];
         for (McrTileInstance tile : state.hand(actor)) {
-            ArrayList<McrTileInstance> copies = byKind[tile.kind().index()];
-            if (copies == null) {
-                copies = new ArrayList<>(4);
-                byKind[tile.kind().index()] = copies;
-            }
-            copies.add(tile);
+            int kind = tile.kind().index();
+            byKind[kind][copyCounts[kind]++] = tile;
         }
-        for (ArrayList<McrTileInstance> copies : byKind) {
-            if (copies != null && copies.size() == 4) {
-                Tile kind = copies.getFirst().kind();
+        for (int kindIndex = 0; kindIndex < byKind.length; kindIndex++) {
+            if (copyCounts[kindIndex] == 4) {
+                Tile kind = Tile.standard(kindIndex);
                 result.add(new McrLegalAction(
                         "concealed_kong:" + kind.name().toLowerCase(java.util.Locale.ROOT),
-                        new McrRoundAction.ConcealedKong(actor, copies)));
+                        new McrRoundAction.ConcealedKong(actor, List.of(byKind[kindIndex]))));
             }
         }
         for (McrPhysicalMeld meld : state.melds(actor)) {
             if (meld.origin() != McrMeldOrigin.PUNG) continue;
-            ArrayList<McrTileInstance> copies = byKind[meld.tiles().getFirst().kind().index()];
-            if (copies == null) continue;
-            for (McrTileInstance fourth : copies) {
+            int kind = meld.tiles().getFirst().kind().index();
+            for (int copy = 0; copy < copyCounts[kind]; copy++) {
+                McrTileInstance fourth = byKind[kind][copy];
                 result.add(new McrLegalAction(
                         "added_kong:" + ids.project(fourth),
                         new McrRoundAction.AddedKong(actor, fourth)));

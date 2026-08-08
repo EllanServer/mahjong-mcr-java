@@ -117,8 +117,13 @@ the fixed priority window, draws from the correct wall end, recursively exposes
 replacement flowers, scores a single discard winner, and returns typed zero-side-
 effect rejections. Tests include unclaimed continuation, exact chow, direct-kong
 flower chaining, legal hu settlement, revision changes, and rejected-state identity.
-Self draw, concealed kong, added kong/robbing, and full hand/match progression remain
-open.
+Added kong/robbing and full hand/match progression remain open.
+
+Self draw now covers both ordinary/replacement draws and the dealer's final initial
+acquisition, while concealed kong consumes four exact instances and recursively
+replaces from the back. `AFTER_KONG` is set only when the winning standard tile is
+the immediate kong replacement; an intervening flower changes the source and keeps
+that fan excluded. Added kong and its hu-only robbing window remain open.
 
 This does not yet make the repository an installable MahjongPaper rule pack. The
 following remain open: integration of reactions into full turn state,

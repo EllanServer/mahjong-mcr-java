@@ -9,14 +9,25 @@ import java.util.Map;
 public record McrInitialDeal(
         Map<Wind, List<McrTileInstance>> concealed,
         Map<Wind, List<McrTileInstance>> flowers,
-        McrWall wall) {
+        McrWall wall,
+        McrTileInstance dealerLastTile,
+        McrDrawSource dealerLastTileSource) {
 
     public McrInitialDeal {
-        if (wall == null) throw new IllegalArgumentException("wall is required");
+        if (wall == null || dealerLastTile == null || dealerLastTileSource == null) {
+            throw new IllegalArgumentException("wall and dealer last-tile metadata are required");
+        }
         concealed = copySeatMap(concealed, false);
         flowers = copySeatMap(flowers, true);
         validateHandSizes(concealed);
         validateConservation(concealed, flowers, wall);
+        if (dealerLastTile.kind().isFlower() || !concealed.get(Wind.EAST).contains(dealerLastTile)) {
+            throw new IllegalArgumentException("dealer last tile must be a standard tile in East's hand");
+        }
+        if (dealerLastTileSource != McrDrawSource.DEAL
+                && dealerLastTileSource != McrDrawSource.FLOWER_REPLACEMENT) {
+            throw new IllegalArgumentException("dealer last tile must come from deal or initial flower replacement");
+        }
     }
 
     public List<McrTileInstance> concealed(Wind seat) {

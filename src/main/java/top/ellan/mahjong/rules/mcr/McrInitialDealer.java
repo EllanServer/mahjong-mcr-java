@@ -41,6 +41,8 @@ public final class McrInitialDealer {
         concealed.get(Wind.SOUTH).add(finalFive.get(1));
         concealed.get(Wind.WEST).add(finalFive.get(2));
         concealed.get(Wind.NORTH).add(finalFive.get(3));
+        McrTileInstance dealerLastTile = finalFive.get(4);
+        McrDrawSource dealerLastTileSource = McrDrawSource.DEAL;
 
         for (Wind seat : Wind.values()) {
             ArrayList<McrTileInstance> hand = concealed.get(seat);
@@ -50,13 +52,19 @@ public final class McrInitialDealer {
                 McrWall.Draw replacement = wall.drawBack();
                 hand.add(replacement.tile());
                 wall = replacement.remainingWall();
+                if (seat == Wind.EAST) {
+                    dealerLastTile = replacement.tile();
+                    dealerLastTileSource = McrDrawSource.FLOWER_REPLACEMENT;
+                }
             }
         }
 
         return new McrInitialDeal(
                 copySeatLists(concealed),
                 copySeatLists(flowers),
-                wall);
+                wall,
+                dealerLastTile,
+                dealerLastTileSource);
     }
 
     private static EnumMap<Wind, ArrayList<McrTileInstance>> emptySeatLists() {

@@ -24,6 +24,8 @@ class McrPhysicalRoundStateTest {
         assertTrue(state.river(Wind.NORTH).isEmpty());
         assertFalse(state.reactionWindow().isPresent());
         assertFalse(state.outcome().isPresent());
+        assertTrue(state.lastDraw().isPresent());
+        assertTrue(state.lastDrawSource().isPresent());
 
         int placed = state.wall().remaining();
         for (Wind seat : Wind.values()) {

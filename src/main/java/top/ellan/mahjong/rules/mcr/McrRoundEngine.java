@@ -33,10 +33,121 @@ public final class McrRoundEngine {
             if (action instanceof McrRoundAction.Discard discard) return discard(state, discard);
             if (action instanceof McrRoundAction.React react) return react(state, react.reaction());
             if (action instanceof McrRoundAction.CloseReactions) return closeReactions(state);
+            if (action instanceof McrRoundAction.SelfDrawWin win) return selfDrawWin(state, win);
+            if (action instanceof McrRoundAction.ConcealedKong kong) return concealedKong(state, kong);
             return McrRoundTransition.rejected(state, McrRoundViolation.WRONG_PHASE);
         } catch (IllegalArgumentException | IllegalStateException mismatch) {
             return McrRoundTransition.rejected(state, McrRoundViolation.INTERNAL_STATE_MISMATCH);
         }
+    }
+
+    private McrRoundTransition selfDrawWin(
+            McrRoundState state, McrRoundAction.SelfDrawWin action) {
+        if (state.phase() != McrRoundPhase.AWAITING_DISCARD) {
+            return McrRoundTransition.rejected(state, McrRoundViolation.WRONG_PHASE);
+        }
+        if (action.seat() != state.currentSeat()) {
+            return McrRoundTransition.rejected(state, McrRoundViolation.NOT_CURRENT_SEAT);
+        }
+        McrTileInstance winningTile = state.lastDraw().orElse(null);
+        if (winningTile == null) {
+            return McrRoundTransition.rejected(state, McrRoundViolation.WIN_NOT_LEGAL);
+        }
+        WinEvaluation evaluation = evaluateSelfDraw(state, action.seat(), winningTile);
+        if (!evaluation.legalWin()) {
+            return McrRoundTransition.rejected(state, McrRoundViolation.WIN_NOT_LEGAL);
+        }
+        Payment payment = McrPayments.settle(evaluation, action.seat(), null);
+        McrRoundOutcome.Win outcome = new McrRoundOutcome.Win(
+                action.seat(), null, evaluation, payment);
+        McrRoundState ended = new McrRoundState(
+                state.revision() + 1,
+                state.roundWind(),
+                action.seat(),
+                McrRoundPhase.ENDED,
+                state.rawHands(),
+                state.rawFlowers(),
+                state.rawMelds(),
+                state.rawRivers(),
+                state.wall(),
+                winningTile,
+                state.rawLastDrawSource(),
+                null,
+                outcome);
+        return McrRoundTransition.accepted(ended, List.of(new McrRoundEvent.RoundWon(outcome)));
+    }
+
+    private McrRoundTransition concealedKong(
+            McrRoundState state, McrRoundAction.ConcealedKong action) {
+        if (state.phase() != McrRoundPhase.AWAITING_DISCARD) {
+            return McrRoundTransition.rejected(state, McrRoundViolation.WRONG_PHASE);
+        }
+        if (action.seat() != state.currentSeat()) {
+            return McrRoundTransition.rejected(state, McrRoundViolation.NOT_CURRENT_SEAT);
+        }
+        if (state.lastDraw().isEmpty() || state.wall().isEmpty()
+                || action.tiles().size() != 4 || !state.hand(action.seat()).containsAll(action.tiles())) {
+            return McrRoundTransition.rejected(state, McrRoundViolation.KONG_NOT_LEGAL);
+        }
+        McrPhysicalMeld meld;
+        try {
+            meld = McrPhysicalMeld.concealedKong(action.tiles());
+        } catch (IllegalArgumentException malformed) {
+            return McrRoundTransition.rejected(state, McrRoundViolation.KONG_NOT_LEGAL);
+        }
+
+        EnumMap<Wind, List<McrTileInstance>> hands = mutableSeats(state.rawHands());
+        List<McrTileInstance> hand = hands.get(action.seat());
+        for (McrTileInstance tile : action.tiles()) hand = removeExact(hand, tile);
+        hands.put(action.seat(), hand);
+        EnumMap<Wind, List<McrPhysicalMeld>> melds = mutableSeats(state.rawMelds());
+        ArrayList<McrPhysicalMeld> seatMelds = new ArrayList<>(melds.get(action.seat()));
+        seatMelds.add(meld);
+        melds.put(action.seat(), List.copyOf(seatMelds));
+
+        ArrayList<McrRoundEvent> events = new ArrayList<>();
+        events.add(new McrRoundEvent.MeldFormed(action.seat(), meld));
+        DrawResult draw = drawStandard(
+                action.seat(),
+                hands,
+                state.rawFlowers(),
+                state.wall(),
+                McrDrawSource.KONG_REPLACEMENT,
+                events);
+        McrRoundState next;
+        if (draw.standardTile == null) {
+            events.add(new McrRoundEvent.ExhaustiveDraw());
+            next = new McrRoundState(
+                    state.revision() + 1,
+                    state.roundWind(),
+                    action.seat(),
+                    McrRoundPhase.ENDED,
+                    draw.hands,
+                    draw.flowers,
+                    melds,
+                    state.rawRivers(),
+                    draw.wall,
+                    null,
+                    null,
+                    null,
+                    new McrRoundOutcome.ExhaustiveDraw());
+        } else {
+            next = new McrRoundState(
+                    state.revision() + 1,
+                    state.roundWind(),
+                    action.seat(),
+                    McrRoundPhase.AWAITING_DISCARD,
+                    draw.hands,
+                    draw.flowers,
+                    melds,
+                    state.rawRivers(),
+                    draw.wall,
+                    draw.standardTile,
+                    draw.source,
+                    null,
+                    null);
+        }
+        return McrRoundTransition.accepted(next, events);
     }
 
     private McrRoundTransition discard(McrRoundState state, McrRoundAction.Discard action) {
@@ -335,6 +446,30 @@ public final class McrRoundEngine {
                         WinMethod.DISCARD,
                         flags,
                         flowers)));
+    }
+
+    private WinEvaluation evaluateSelfDraw(
+            McrRoundState state, Wind winner, McrTileInstance winningTile) {
+        ArrayList<McrTileInstance> beforeWin = new ArrayList<>(state.hand(winner));
+        if (!beforeWin.remove(winningTile)) {
+            throw new IllegalStateException("last draw is absent from winning hand");
+        }
+        ArrayList<Tile> concealed = new ArrayList<>(beforeWin.size());
+        for (McrTileInstance tile : beforeWin) concealed.add(tile.kind());
+        ArrayList<Meld> melds = new ArrayList<>(state.melds(winner).size());
+        for (McrPhysicalMeld meld : state.melds(winner)) melds.add(meld.scoringMeld());
+        EnumSet<WinFlag> flags = EnumSet.noneOf(WinFlag.class);
+        McrDrawSource source = state.lastDrawSource().orElseThrow();
+        if (source == McrDrawSource.KONG_REPLACEMENT) flags.add(WinFlag.AFTER_KONG);
+        if (source == McrDrawSource.NORMAL && state.wall().isEmpty()) flags.add(WinFlag.LAST_TILE);
+        if (isPublicLastOfKind(state, winningTile)) flags.add(WinFlag.LAST_OF_KIND);
+        ArrayList<Tile> flowers = new ArrayList<>(state.flowers(winner).size());
+        for (McrTileInstance flower : state.flowers(winner)) flowers.add(flower.kind());
+        return scorer.evaluate(new WinInput(
+                TileCounts.of(concealed),
+                melds,
+                winningTile.kind(),
+                new WinContext(winner, state.roundWind(), WinMethod.SELF_DRAW, flags, flowers)));
     }
 
     private static boolean isPublicLastOfKind(McrRoundState state, McrTileInstance winningTile) {

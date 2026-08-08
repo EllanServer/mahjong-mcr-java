@@ -106,8 +106,16 @@ formation, recursive flower replacement, ordinary and back-wall draws, discard
 win evaluation, and exhaustive termination. Invalid or stale actions return the
 unchanged input object with a typed violation. Seats with no legal reaction are
 passed internally, so an unclaimable discard does not allocate an idle timer or
-mailbox round trip. Self draw, concealed/added kong and robbed-kong transitions
+mailbox round trip. Added kong, robbed-kong arbitration and full match progression
 remain explicit blockers before the SPI provider can claim full-hand coverage.
+
+The state also records the dealer's final acquisition during the deal, including
+whether an initial flower replacement supplied it. This supports the Green Book
+3.5.7 case where East declares hu before the first discard. Self-draw settlement
+and exact concealed-kong transitions are now implemented; a kong replacement that
+first yields a flower is deliberately classified as `FLOWER_REPLACEMENT`, not
+`KONG_REPLACEMENT`, matching the scoring exception for Out With Replacement Tile.
+Added kong and robbing it remain open.
 
 ## Representation and performance
 

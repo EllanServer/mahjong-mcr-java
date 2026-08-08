@@ -79,8 +79,8 @@ public final class McrRoundState {
                 melds,
                 rivers,
                 deal.wall(),
-                null,
-                null,
+                deal.dealerLastTile(),
+                deal.dealerLastTileSource(),
                 null,
                 null);
     }

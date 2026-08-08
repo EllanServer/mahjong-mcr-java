@@ -67,6 +67,8 @@ class McrPhysicalDealTest {
                 ids(deal.concealed(Wind.NORTH)));
         assertEquals(91, deal.wall().remaining());
         assertTrue(deal.flowers().values().stream().allMatch(List::isEmpty));
+        assertEquals(McrTileInstance.fromId(52), deal.dealerLastTile());
+        assertEquals(McrDrawSource.DEAL, deal.dealerLastTileSource());
     }
 
     @Test
@@ -84,6 +86,8 @@ class McrPhysicalDealTest {
         assertTrue(deal.concealed(Wind.EAST).stream().noneMatch(tile -> tile.kind().isFlower()));
         assertTrue(deal.concealed(Wind.EAST).contains(firstStandard));
         assertEquals(83, deal.wall().remaining());
+        assertEquals(firstStandard, deal.dealerLastTile());
+        assertEquals(McrDrawSource.FLOWER_REPLACEMENT, deal.dealerLastTileSource());
 
         HashSet<McrTileInstance> all = new HashSet<>();
         for (Wind wind : Wind.values()) {

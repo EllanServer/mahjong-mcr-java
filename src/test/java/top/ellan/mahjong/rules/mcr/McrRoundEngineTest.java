@@ -122,6 +122,58 @@ class McrRoundEngineTest {
     }
 
     @Test
+    void dealerCanWinBeforeTheFirstDiscardUsingTheTrackedFinalDealTile() {
+        McrRoundState before = eastPureStraightInitialWin();
+
+        McrRoundTransition transition = engine.transition(
+                before, new McrRoundAction.SelfDrawWin(Wind.EAST));
+
+        assertTrue(transition.accepted());
+        McrRoundOutcome.Win outcome = assertInstanceOf(
+                McrRoundOutcome.Win.class, transition.state().outcome().orElseThrow());
+        assertEquals(Wind.EAST, outcome.winner());
+        assertEquals(WinMethod.SELF_DRAW, outcome.evaluation().winMethod());
+        assertEquals(McrDrawSource.DEAL, transition.state().lastDrawSource().orElseThrow());
+        assertEquals(0, outcome.payment().deltas().values().stream().mapToInt(Integer::intValue).sum());
+    }
+
+    @Test
+    void concealedKongUsesExactCopiesAndBackWallFlowerReplacement() {
+        McrRoundState before = orderedRound();
+        List<McrTileInstance> kongTiles = List.of(
+                McrTileInstance.fromId(0),
+                McrTileInstance.fromId(1),
+                McrTileInstance.fromId(2),
+                McrTileInstance.fromId(3));
+
+        McrRoundTransition transition = engine.transition(
+                before, new McrRoundAction.ConcealedKong(Wind.EAST, kongTiles));
+
+        assertTrue(transition.accepted());
+        McrRoundState after = transition.state();
+        assertEquals(McrMeldOrigin.CONCEALED_KONG, after.melds(Wind.EAST).getFirst().origin());
+        assertEquals(8, after.flowers(Wind.EAST).size());
+        assertEquals(McrTileInstance.fromId(135), after.lastDraw().orElseThrow());
+        assertEquals(McrDrawSource.FLOWER_REPLACEMENT, after.lastDrawSource().orElseThrow());
+        assertEquals(82, after.wall().remaining());
+    }
+
+    @Test
+    void selfDrawAndKongRejectWithoutChangingStateWhenNotLegal() {
+        McrRoundState state = orderedRound();
+        McrRoundTransition falseHu = engine.transition(
+                state, new McrRoundAction.SelfDrawWin(Wind.EAST));
+        assertSame(state, falseHu.state());
+        assertEquals(List.of(McrRoundViolation.WIN_NOT_LEGAL), falseHu.violations());
+
+        McrRoundTransition malformedKong = engine.transition(
+                state, new McrRoundAction.ConcealedKong(
+                        Wind.EAST, List.of(state.hand(Wind.EAST).getFirst())));
+        assertSame(state, malformedKong.state());
+        assertEquals(List.of(McrRoundViolation.KONG_NOT_LEGAL), malformedKong.violations());
+    }
+
+    @Test
     void rejectedAndStaleActionsRetainTheExactInputSnapshot() {
         McrRoundState state = orderedRound();
         McrRoundTransition wrongSeat = engine.transition(
@@ -152,6 +204,18 @@ class McrRoundEngineTest {
         for (int i = 0; i < southPositions.length; i++) {
             place(order, southPositions[i], southTiles[i]);
         }
+        return McrRoundState.start(
+                McrInitialDealer.deal(McrWall.fromOrder(order)), Wind.EAST);
+    }
+
+    private static McrRoundState eastPureStraightInitialWin() {
+        ArrayList<McrTileInstance> order = new ArrayList<>(McrTileInstance.fullSet());
+        int[] eastPositions = {0, 1, 2, 3, 16, 17, 18, 19, 32, 33, 34, 35, 48};
+        int[] concealedBeforeWin = {0, 4, 8, 12, 16, 20, 24, 28, 72, 73, 74, 40, 41};
+        for (int i = 0; i < eastPositions.length; i++) {
+            place(order, eastPositions[i], concealedBeforeWin[i]);
+        }
+        place(order, 52, 32);
         return McrRoundState.start(
                 McrInitialDealer.deal(McrWall.fromOrder(order)), Wind.EAST);
     }

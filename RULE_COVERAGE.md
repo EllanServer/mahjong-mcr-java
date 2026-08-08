@@ -91,3 +91,17 @@ until an independently authored corpus provides, for each of the 81 fans:
 
 Imported upstream fixtures must retain the upstream MIT notice. The differential
 corpus protects migration behavior; it does not replace independent certification.
+
+## Match-state migration status
+
+The repository now models the complete 144-tile set, a deterministic immutable
+two-ended wall, the Green Book 3.5.7 initial distribution, and recursive initial
+flower replacement from the back of the wall. Tests cover identity conservation,
+the dealer's one-and-three allocation, two-ended draw direction, recursive flower
+replacement, malformed wall rejection, and seeded repeatability.
+
+This does not yet make the repository an installable MahjongPaper rule pack. The
+following remain open: turn/reaction state, chow/pung/kong physical ownership,
+win arbitration, exhaustive-wall handling, round and match progression, canonical
+snapshot encoding, public/private projections, legal action tokens, and the stable
+SPI provider boundary.

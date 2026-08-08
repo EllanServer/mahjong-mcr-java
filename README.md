@@ -1,7 +1,8 @@
 # mahjong-mcr-java
 
 Pure Java 21 implementation of Mahjong Competition Rules (MCR) hand structure,
-the 81 official scoring elements, waits, the eight-point minimum, and settlement.
+the 81 official scoring elements, waits, the eight-point minimum, settlement, and
+the first physical-match primitives used by the MahjongPaper 2.0 rule pack.
 The runtime has no third-party dependencies and contains no JNI, JSON, reflection,
 global mutable cache, UI, server, or bot code.
 
@@ -66,9 +67,31 @@ prevents a caller from fabricating a typed award list and passing a forged score
 minimum. It records the two methods separately, allowing a seven-point discard hand
 which becomes eight on self draw.
 
+## Physical wall and initial deal
+
+`McrTileInstance` defines all 144 identities: four copies of each of the 34
+standard kinds and one copy of each of the eight flowers. `McrWall` is immutable;
+ordinary draws consume its front and replacement draws consume its back. Its
+repository-owned SplitMix64 shuffle is stable across supported JVMs so a recorded
+seed can be replayed without relying on a JDK random-provider implementation.
+
+`McrInitialDealer` follows Green Book section 3.5.7: three four-tile blocks per
+seat, the dealer's final "one and three" pair, one final tile for each other seat,
+then initial flower replacement in East/South/West/North order. A replacement that
+is itself a flower is exposed and replaced again from the back. The resulting
+`McrInitialDeal` validates all 144 identities, contains no flower in a concealed
+hand, and exposes no mutable collection.
+
+This is deliberately a physical-state foundation, not yet a claim of a complete
+MCR match implementation. Discard reactions, meld ownership, kongs, hand ending,
+round rotation, snapshots, scene projections, and the rule-pack SPI provider remain
+release-blocking work.
+
 ## Representation and performance
 
 - Standard tile kinds have stable indexes `0..33`; flowers are `34..41`.
+- Physical IDs are stable in `0..143`; the wall stores compact IDs and shares its
+  immutable order between successor states.
 - `TileCounts` stores a defensively copied `byte[34]` value.
 - All legal standard decompositions are enumerated. Associated-combination scoring
   uses a compact disjoint-set search to enforce the non-identical/non-reuse rules.

@@ -133,10 +133,12 @@ public final class McrRulePackProvider implements RulePackProvider {
         if (events.isEmpty()) {
             throw new IllegalStateException("accepted MCR transition emitted no canonical event");
         }
+        McrProviderState next = current.withMatch(domain.state());
         return new RuleTransition(
-                current.withMatch(domain.state()),
+                next,
                 disposition(domain.state(), domain.events()),
                 events,
+                McrPresentationCues.from(next, domain.events()),
                 "accepted");
     }
 

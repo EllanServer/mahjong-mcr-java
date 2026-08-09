@@ -10,6 +10,8 @@ import top.ellan.mahjong.spi.PrivateRuleView;
 import top.ellan.mahjong.spi.PublicRuleView;
 import top.ellan.mahjong.spi.RuleAction;
 import top.ellan.mahjong.spi.RulePackProvider;
+import top.ellan.mahjong.spi.RulePresentationCue;
+import top.ellan.mahjong.spi.RulePresentationCueType;
 import top.ellan.mahjong.spi.RuleState;
 import top.ellan.mahjong.spi.RuleStateSnapshot;
 import top.ellan.mahjong.spi.RuleTransition;
@@ -156,6 +158,14 @@ class McrRulePackProviderTest {
         assertEquals(TransitionDisposition.REJECTED, forged.disposition());
         assertSame(state, forged.nextState());
         assertEquals("invalid_action_payload", forged.reasonCode());
+
+        RuleTransition discarded = provider.transition(
+                state, east, discards.getFirst().action());
+        assertTrue(discarded.accepted());
+        assertEquals(
+                List.of(RulePresentationCue.broadcast(
+                        RulePresentationCueType.TILE_DISCARD)),
+                discarded.presentationCues());
     }
 
     @Test

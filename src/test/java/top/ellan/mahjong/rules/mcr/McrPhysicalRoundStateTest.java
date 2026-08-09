@@ -55,6 +55,8 @@ class McrPhysicalRoundStateTest {
         assertEquals(McrMeldOrigin.ADDED_KONG, added.origin());
         assertEquals(p1, added.claimedDiscard());
         assertEquals(Wind.NORTH, added.sourceSeat());
+        assertEquals(p4, added.addedTile());
+        assertEquals(p4, added.tiles().getLast());
         assertEquals(Meld.openKong(Tile.P7), added.scoringMeld());
 
         McrPhysicalMeld concealed = McrPhysicalMeld.concealedKong(List.of(p1, p2, p3, p4));

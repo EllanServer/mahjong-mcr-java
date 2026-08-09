@@ -1,6 +1,7 @@
 package top.ellan.mahjong.rules.mcr;
 
 import java.util.Optional;
+import top.ellan.mahjong.spi.RuleTilePresentation;
 
 /** One public or authorized-private scene node with no physical tile identifier. */
 public record McrViewTile(
@@ -10,12 +11,12 @@ public record McrViewTile(
         McrViewZone zone,
         int index,
         boolean faceUp,
-        boolean sideways,
-        boolean emphasized) {
+        RuleTilePresentation presentation) {
 
     public McrViewTile {
         if (projectionId < 0 || projectionId >= McrTileInstance.PHYSICAL_TILE_COUNT
-                || face == null || owner == null || zone == null || index < 0) {
+                || face == null || owner == null || zone == null || index < 0
+                || presentation == null) {
             throw new IllegalArgumentException("invalid MCR projected tile");
         }
         if (faceUp != face.isPresent()) {

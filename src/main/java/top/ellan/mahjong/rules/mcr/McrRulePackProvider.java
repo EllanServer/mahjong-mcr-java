@@ -300,9 +300,9 @@ public final class McrRulePackProvider implements RulePackProvider {
         TileVisualId visual = tile.faceUp()
                 ? FACE_VISUALS[tile.face().orElseThrow().ordinal()]
                 : BACK;
-        int layoutIndex = tile.zone() == McrViewZone.WALL
-                ? state.wallSlot(tile.projectionId())
-                : tile.index();
+        RuleTilePresentation presentation = tile.zone() == McrViewZone.WALL
+                ? RuleTilePresentation.natural(state.wallSlot(tile.projectionId()))
+                : tile.presentation();
         return new RuleViewTile(
                 new TileInstanceId(tile.projectionId()),
                 visual,
@@ -312,13 +312,7 @@ public final class McrRulePackProvider implements RulePackProvider {
                 zone(tile.zone()),
                 tile.index(),
                 tile.faceUp(),
-                new RuleTilePresentation(
-                        layoutIndex,
-                        tile.sideways()
-                                ? top.ellan.mahjong.spi.RuleTileRotation.CLOCKWISE
-                                : top.ellan.mahjong.spi.RuleTileRotation.NATURAL,
-                        0,
-                        tile.emphasized()));
+                presentation);
     }
 
     private static RuleViewZone zone(McrViewZone zone) {

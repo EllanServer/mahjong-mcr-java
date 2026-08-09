@@ -19,7 +19,13 @@ public record McrPhysicalMeld(
             throw new IllegalArgumentException("meld origin and tiles are required");
         }
         ArrayList<McrTileInstance> sorted = new ArrayList<>(tiles);
-        sorted.sort(null);
+        if (origin == McrMeldOrigin.ADDED_KONG && sorted.size() == 4) {
+            McrTileInstance added = sorted.removeLast();
+            sorted.sort(null);
+            sorted.add(added);
+        } else {
+            sorted.sort(null);
+        }
         tiles = List.copyOf(sorted);
         if (new HashSet<>(tiles).size() != tiles.size()) {
             throw new IllegalArgumentException("physical meld tiles must be unique");
@@ -37,6 +43,9 @@ public record McrPhysicalMeld(
             }
         } else if (claimedDiscard == null || sourceSeat == null || !tiles.contains(claimedDiscard)) {
             throw new IllegalArgumentException("an open meld must retain its claimed discard and source seat");
+        }
+        if (origin == McrMeldOrigin.ADDED_KONG && tiles.getLast().equals(claimedDiscard)) {
+            throw new IllegalArgumentException("the added tile cannot be the original claimed discard");
         }
 
         switch (origin) {
@@ -74,6 +83,11 @@ public record McrPhysicalMeld(
         upgraded.add(fourthTile);
         return new McrPhysicalMeld(
                 McrMeldOrigin.ADDED_KONG, upgraded, claimedDiscard, sourceSeat);
+    }
+
+    /** Exact fourth tile stacked on the source marker, or {@code null} for a non-added kong. */
+    public McrTileInstance addedTile() {
+        return origin == McrMeldOrigin.ADDED_KONG ? tiles.getLast() : null;
     }
 
     public Meld scoringMeld() {

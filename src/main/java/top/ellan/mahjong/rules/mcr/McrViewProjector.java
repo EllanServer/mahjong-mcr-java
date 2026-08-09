@@ -58,16 +58,22 @@ public final class McrViewProjector {
             for (int meldIndex = 0; meldIndex < melds.size(); meldIndex++) {
                 McrPhysicalMeld meld = melds.get(meldIndex);
                 boolean visible = meld.origin() != McrMeldOrigin.CONCEALED_KONG || ended;
+                int ordinaryOrdinal = 0;
                 for (int tileIndex = 0; tileIndex < meld.tiles().size(); tileIndex++) {
+                    McrTileInstance tile = meld.tiles().get(tileIndex);
+                    boolean claimed = tile.equals(meld.claimedDiscard());
+                    boolean added = tile.equals(meld.addedTile());
+                    top.ellan.mahjong.spi.RuleTilePresentation presentation = meldPresentation(
+                            meld, seat, meldIndex, tile, tileIndex, ordinaryOrdinal);
+                    if (!claimed && !added) ordinaryOrdinal++;
                     tiles.add(project(
                             ids,
-                            meld.tiles().get(tileIndex),
+                            tile,
                             seat,
                             McrViewZone.MELD,
                             meldIndex * 4 + tileIndex,
                             visible,
-                            meld.tiles().get(tileIndex).equals(meld.claimedDiscard()),
-                            false));
+                            presentation));
                 }
             }
         }
@@ -110,6 +116,35 @@ public final class McrViewProjector {
         return new McrPrivateView(state.revision(), viewer, tiles);
     }
 
+    static top.ellan.mahjong.spi.RuleTilePresentation meldPresentation(
+            McrPhysicalMeld meld,
+            Wind owner,
+            int meldIndex,
+            McrTileInstance tile,
+            int tileIndex,
+            int ordinaryOrdinal) {
+        if (meld.origin() == McrMeldOrigin.CONCEALED_KONG) {
+            return top.ellan.mahjong.spi.RuleTilePresentation.natural(
+                    meldIndex * 4 + tileIndex);
+        }
+        boolean added = tile.equals(meld.addedTile());
+        top.ellan.mahjong.spi.RuleMeldTileRole role = added
+                ? top.ellan.mahjong.spi.RuleMeldTileRole.ADDED
+                : tile.equals(meld.claimedDiscard())
+                        ? top.ellan.mahjong.spi.RuleMeldTileRole.CLAIMED
+                        : top.ellan.mahjong.spi.RuleMeldTileRole.ORDINARY;
+        return top.ellan.mahjong.spi.RuleMeldPresentation.tile(
+                meldIndex,
+                meld.origin() == McrMeldOrigin.ADDED_KONG ? 3 : meld.tiles().size(),
+                Wind.values().length,
+                new top.ellan.mahjong.spi.SeatId(owner.ordinal()),
+                new top.ellan.mahjong.spi.SeatId(meld.sourceSeat().ordinal()),
+                role,
+                role == top.ellan.mahjong.spi.RuleMeldTileRole.ORDINARY
+                        ? ordinaryOrdinal
+                        : -1);
+    }
+
     private static McrViewTile project(
             McrProjectionIds ids,
             McrTileInstance tile,
@@ -124,8 +159,7 @@ public final class McrViewProjector {
                 zone,
                 index,
                 faceUp,
-                false,
-                false);
+                top.ellan.mahjong.spi.RuleTilePresentation.natural(index));
     }
 
     private static McrViewTile project(
@@ -137,6 +171,23 @@ public final class McrViewProjector {
             boolean faceUp,
             boolean sideways,
             boolean emphasized) {
+        top.ellan.mahjong.spi.RuleTilePresentation presentation = sideways
+                ? top.ellan.mahjong.spi.RuleTilePresentation.clockwise(index)
+                : top.ellan.mahjong.spi.RuleTilePresentation.natural(index);
+        if (emphasized) {
+            presentation = presentation.withEmphasis();
+        }
+        return project(ids, tile, owner, zone, index, faceUp, presentation);
+    }
+
+    private static McrViewTile project(
+            McrProjectionIds ids,
+            McrTileInstance tile,
+            Wind owner,
+            McrViewZone zone,
+            int index,
+            boolean faceUp,
+            top.ellan.mahjong.spi.RuleTilePresentation presentation) {
         return new McrViewTile(
                 ids.project(tile),
                 faceUp ? Optional.of(tile.kind()) : Optional.empty(),
@@ -144,7 +195,6 @@ public final class McrViewProjector {
                 zone,
                 index,
                 faceUp,
-                sideways,
-                emphasized);
+                presentation);
     }
 }

@@ -114,8 +114,30 @@ class McrViewProjectorTest {
                 McrViewZone.WALL,
                 0,
                 false,
-                false,
-                false).faceUp());
+                top.ellan.mahjong.spi.RuleTilePresentation.natural(0)).faceUp());
+    }
+
+    @Test
+    void openMeldUsesSharedSourceMarkerAndAddedKongStack() {
+        McrTileInstance p1 = McrTileInstance.fromId(Tile.P1.ordinal() * 4);
+        McrTileInstance p2 = McrTileInstance.fromId(Tile.P1.ordinal() * 4 + 1);
+        McrTileInstance p3 = McrTileInstance.fromId(Tile.P1.ordinal() * 4 + 2);
+        McrTileInstance p4 = McrTileInstance.fromId(Tile.P1.ordinal() * 4 + 3);
+        McrPhysicalMeld pung = McrPhysicalMeld.pung(List.of(p1, p2, p3), p1, Wind.NORTH);
+        assertEquals(
+                0,
+                McrViewProjector.meldPresentation(pung, Wind.EAST, 0, p1, 0, 0)
+                        .layoutIndex());
+        assertEquals(
+                1,
+                McrViewProjector.meldPresentation(pung, Wind.EAST, 0, p2, 1, 0)
+                        .layoutIndex());
+        McrPhysicalMeld added = pung.addFourth(p4);
+        top.ellan.mahjong.spi.RuleTilePresentation stacked =
+                McrViewProjector.meldPresentation(added, Wind.EAST, 0, p4, 3, 2);
+        assertEquals(0, stacked.layoutIndex());
+        assertEquals(1, stacked.stackLevel());
+        assertEquals(top.ellan.mahjong.spi.RuleTileRotation.CLOCKWISE, stacked.rotation());
     }
 
     private static McrRoundState eastPureStraightInitialWin() {

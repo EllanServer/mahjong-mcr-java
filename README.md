@@ -154,7 +154,7 @@ payments and reruns both hand and complete-game invariants.
 public/private views, canonical events and identity-bound snapshots. The rule-pack
 JAR keeps `mahjong-rule-spi` compile-only, carries its static descriptor and MCR
 tile manifest, and is verified against the reusable TCK built from pinned
-MahjongEngine commit `242b48024a73364cfb614287c4c6d9ed224a862b` in GitHub Actions.
+MahjongEngine commit `b207c715c7cff651ad960bbc109fedf75e8647b4` in GitHub Actions.
 It is an installable candidate, not a signed or independently certified release.
 
 ## Representation and performance

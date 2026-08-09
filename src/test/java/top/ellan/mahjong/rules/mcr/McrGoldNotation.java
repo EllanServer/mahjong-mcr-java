@@ -4,12 +4,9 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
-/**
- * Test-only reader for the compact notation used by the vendored GB-Mahjong
- * {@code unit_test.cpp}. Production code deliberately does not parse this format.
- */
-final class LegacyCppFixtureParser {
-    private LegacyCppFixtureParser() {}
+/** Test-only compact notation for repository-authored MCR certification hands. */
+final class McrGoldNotation {
+    private McrGoldNotation() {}
 
     static WinInput win(String fixture) {
         Parsed parsed = parse(fixture, true);
@@ -143,12 +140,9 @@ final class LegacyCppFixtureParser {
 
     private static List<Tile> flowers(String value) {
         if (value.isEmpty() || value.equals("0")) return List.of();
-        int count;
-        if (value.length() == 1 && Character.isDigit(value.charAt(0))) {
-            count = value.charAt(0) - '0';
-        } else {
-            count = value.length();
-        }
+        int count = value.length() == 1 && Character.isDigit(value.charAt(0))
+                ? value.charAt(0) - '0'
+                : value.length();
         if (count < 0 || count > 8) throw new IllegalArgumentException("invalid flower count: " + value);
         List<Tile> result = new ArrayList<>(count);
         for (int i = 0; i < count; i++) result.add(Tile.values()[34 + i]);

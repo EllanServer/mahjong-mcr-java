@@ -26,7 +26,7 @@ class LegacyCppDifferentialRegressionTest {
     @TestFactory
     Stream<DynamicTest> migratedScoringCorpus() {
         return scoreCases().stream().map(test -> DynamicTest.dynamicTest(test.fixture(), () -> {
-            WinEvaluation result = engine.evaluate(LegacyCppFixtureParser.win(test.fixture()));
+            WinEvaluation result = engine.evaluate(McrGoldNotation.win(test.fixture()));
             assertTrue(result.winningShape(), result.violations().toString());
             assertEquals(expectedMultiset(test.fans()), awardMultiset(result.awards()),
                     () -> "C++ differential mismatch: " + result.awards());
@@ -36,7 +36,7 @@ class LegacyCppDifferentialRegressionTest {
     @TestFactory
     Stream<DynamicTest> migratedFormalWaitCorpus() {
         return waitCases().stream().map(test -> DynamicTest.dynamicTest(test.fixture(), () -> {
-            LegacyCppFixtureParser.ParsedWait input = LegacyCppFixtureParser.wait(test.fixture());
+            McrGoldNotation.ParsedWait input = McrGoldNotation.wait(test.fixture());
             assertEquals(Set.copyOf(test.tiles()), Set.copyOf(formalPhysicalWaits(input)),
                     "formal wait mismatch");
         }));
@@ -44,7 +44,7 @@ class LegacyCppDifferentialRegressionTest {
 
     @Test
     void oldFlowerOnlyMinimumBehaviorIsDeliberatelyRejected() {
-        WinEvaluation result = engine.evaluate(LegacyCppFixtureParser.win(
+        WinEvaluation result = engine.evaluate(McrGoldNotation.win(
                 "[123m,1][345m,1]678p56sWW7s|EE0000|2"));
         assertTrue(result.winningShape());
         assertEquals(2, result.flowerFan());
@@ -60,7 +60,7 @@ class LegacyCppDifferentialRegressionTest {
         assertFalse(flowersCannotQualify.legalWin());
     }
 
-    private List<Tile> formalPhysicalWaits(LegacyCppFixtureParser.ParsedWait input) {
+    private List<Tile> formalPhysicalWaits(McrGoldNotation.ParsedWait input) {
         int[] physical = new int[Tile.STANDARD_KIND_COUNT];
         for (int i = 0; i < physical.length; i++) physical[i] = input.concealed().count(Tile.standard(i));
         for (Meld meld : input.melds()) {

@@ -58,13 +58,19 @@ class Mcr81FanGoldTest {
 
     @TestFactory
     Stream<DynamicTest> everyOfficialFanHasPositiveNearMissAndExclusionGold() throws IOException {
+        List<GoldCase> cases = loadCases();
+        EnumMap<Fan, GoldCase> casesByFan = new EnumMap<>(Fan.class);
+        for (GoldCase gold : cases) casesByFan.put(gold.fan(), gold);
         Map<Fan, Set<Fan>> exclusions = exclusions();
-        return loadCases().stream().map(gold -> DynamicTest.dynamicTest(
+        return cases.stream().map(gold -> DynamicTest.dynamicTest(
                 "%02d %s (%d fan)".formatted(gold.greenBookNumber(), gold.fan(), gold.fan().points()),
-                () -> verifyGoldCase(gold, exclusions.get(gold.fan()))));
+                () -> verifyGoldCase(gold, exclusions.get(gold.fan()), casesByFan)));
     }
 
-    private void verifyGoldCase(GoldCase gold, Set<Fan> excludedFans) {
+    private void verifyGoldCase(
+            GoldCase gold,
+            Set<Fan> excludedFans,
+            Map<Fan, GoldCase> casesByFan) {
         WinInput positive = McrGoldNotation.win(gold.positiveFixture());
         WinEvaluation result = engine.evaluate(positive);
 
@@ -77,8 +83,8 @@ class Mcr81FanGoldTest {
                             + ": " + result.awards());
         }
 
-        WinInput nearMiss = nearMiss(gold.fan(), positive);
-        assertNotNull(nearMiss, () -> "no one-step winning near miss found for " + gold.fan());
+        WinInput nearMiss = nearMiss(gold.fan(), positive, casesByFan);
+        assertNotNull(nearMiss, () -> "no winning near miss found for " + gold.fan());
         WinEvaluation negative = engine.evaluate(nearMiss);
         assertTrue(negative.winningShape(),
                 () -> "near miss must remain a winning shape for " + gold.fan());
@@ -86,8 +92,8 @@ class Mcr81FanGoldTest {
                 () -> "near miss still awards " + gold.fan() + ": " + negative.awards());
     }
 
-    private WinInput nearMiss(Fan fan, WinInput positive) {
-        return switch (fan) {
+    private WinInput nearMiss(Fan fan, WinInput positive, Map<Fan, GoldCase> casesByFan) {
+        WinInput contextual = switch (fan) {
             case ZIMO, BUQIUREN -> withMethod(positive, WinMethod.DISCARD);
             case MENQIANQING, QUANQIUREN -> withMethod(positive, WinMethod.SELF_DRAW);
             case MIAOSHOUHUICHUN, HAIDILAOYUE -> withoutFlag(positive, WinFlag.LAST_TILE);
@@ -97,8 +103,17 @@ class Mcr81FanGoldTest {
             case QUANFENGKE -> withRoundWind(positive, Wind.NORTH);
             case MENFENGKE -> withSeatWind(positive, Wind.SOUTH);
             case HUAPAI -> withoutFlowers(positive);
-            default -> oneTileWinningNearMiss(fan, positive);
+            default -> null;
         };
+        if (contextual != null) return contextual;
+
+        Fan relatedNegative = relatedWinningNegatives().get(fan);
+        if (relatedNegative != null) {
+            GoldCase negative = casesByFan.get(relatedNegative);
+            if (negative == null) throw new IllegalStateException("missing related gold case " + relatedNegative);
+            return McrGoldNotation.win(negative.positiveFixture());
+        }
+        return oneTileWinningNearMiss(fan, positive);
     }
 
     private WinInput oneTileWinningNearMiss(Fan target, WinInput positive) {
@@ -256,6 +271,39 @@ class Mcr81FanGoldTest {
         exclude(result, Fan.MENFENGKE, Fan.YAOJIUKE);
         exclude(result, Fan.PINGHU, Fan.WUZI);
         exclude(result, Fan.DUANYAO, Fan.WUZI);
+        return Map.copyOf(result);
+    }
+
+    private static Map<Fan, Fan> relatedWinningNegatives() {
+        EnumMap<Fan, Fan> result = new EnumMap<>(Fan.class);
+        result.put(Fan.SIGANG, Fan.SANGANG);
+        result.put(Fan.SHISANYAO, Fan.QIXINGBUKAO);
+        result.put(Fan.QINGYAOJIU, Fan.HUNYAOJIU);
+        result.put(Fan.ZIYISE, Fan.HUNYAOJIU);
+        result.put(Fan.SIANKE, Fan.SANANKE);
+        result.put(Fan.SANGANG, Fan.SHUANGANGANG);
+        result.put(Fan.HUNYAOJIU, Fan.QINGYAOJIU);
+        result.put(Fan.QIDUI, Fan.PINGHU);
+        result.put(Fan.QINGYISE, Fan.HUNYISE);
+        result.put(Fan.QUANZHONG, Fan.DUANYAO);
+        result.put(Fan.QUANXIAO, Fan.XIAOYUWU);
+        result.put(Fan.SANANKE, Fan.SHUANGANKE);
+        result.put(Fan.ZUHELONG, Fan.QIXINGBUKAO);
+        result.put(Fan.TUIBUDAO, Fan.QINGYAOJIU);
+        result.put(Fan.HUNYISE, Fan.WUMENQI);
+        result.put(Fan.WUMENQI, Fan.HUNYISE);
+        result.put(Fan.SHUANGANGANG, Fan.ANGANG);
+        result.put(Fan.SHUANGJIANKE, Fan.JIANKE);
+        result.put(Fan.SHUANGMINGGANG, Fan.MINGGANG);
+        result.put(Fan.JIANKE, Fan.MENFENGKE);
+        result.put(Fan.PINGHU, Fan.PENGPENGHU);
+        result.put(Fan.SIGUIYI, Fan.PINGHU);
+        result.put(Fan.SHUANGANKE, Fan.MENFENGKE);
+        result.put(Fan.ANGANG, Fan.MINGGANG);
+        result.put(Fan.DUANYAO, Fan.QUANDAIYAO);
+        result.put(Fan.MINGGANG, Fan.PINGHU);
+        result.put(Fan.QUEYIMEN, Fan.WUMENQI);
+        result.put(Fan.WUZI, Fan.HUNYISE);
         return Map.copyOf(result);
     }
 

@@ -88,6 +88,14 @@ class McrRulePackProviderTest {
                 manifest.getProperty("requiredResources"));
         assertTrue(McrRulePackProvider.class.getClassLoader().getResource(
                 "assets/mcr/tile-visuals.properties") != null);
+
+        Properties tileVisuals = new Properties();
+        try (InputStream input = McrRulePackProvider.class.getClassLoader()
+                .getResourceAsStream("assets/mcr/tile-visuals.properties")) {
+            assertTrue(input != null);
+            tileVisuals.load(input);
+        }
+        assertEquals("mcr:tile/bamboo", tileVisuals.getProperty("bamboo_flower"));
     }
 
     @Test

@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import top.ellan.mahjong.spi.LegalAction;
+import top.ellan.mahjong.spi.AutomatedPlayerActions;
 import top.ellan.mahjong.spi.MatchPlayer;
 import top.ellan.mahjong.spi.MatchSeed;
 import top.ellan.mahjong.spi.MatchSetup;
@@ -51,6 +52,7 @@ public final class McrRulePackProvider implements RulePackProvider {
     private final McrLegalActionGenerator legalActions = new McrLegalActionGenerator();
     private final McrScheduledActionPolicy scheduledActions =
             new McrScheduledActionPolicy(legalActions);
+    private final McrAutomationPolicy automation = new McrAutomationPolicy();
     private final McrViewProjector views = new McrViewProjector();
     private final McrProviderSnapshotCodec snapshots = new McrProviderSnapshotCodec();
 
@@ -165,6 +167,12 @@ public final class McrRulePackProvider implements RulePackProvider {
     @Override
     public Optional<ScheduledRuleAction> scheduledAction(RuleState state) {
         return scheduledActions.next(requireState(state));
+    }
+
+    @Override
+    public Optional<ScheduledRuleAction> automatedAction(
+            RuleState state, List<AutomatedPlayerActions> candidates) {
+        return automation.next(requireState(state), List.copyOf(candidates));
     }
 
     @Override

@@ -60,6 +60,25 @@ class McrRulePackProviderTest {
     }
 
     @Test
+    void automationChoosesAnAcceptedActionFromTheSuppliedMcrActions() {
+        RuleState state = provider.createMatch(setup());
+        PlayerId actor = players.getFirst().playerId();
+        List<LegalAction> legalActions = provider.legalActions(state, actor);
+
+        ScheduledRuleAction automated = provider.automatedAction(
+                        state,
+                        List.of(new top.ellan.mahjong.spi.AutomatedPlayerActions(
+                                actor, legalActions)))
+                .orElseThrow();
+
+        assertEquals(actor, automated.actor());
+        assertTrue(legalActions.stream()
+                .anyMatch(legal -> legal.action().equals(automated.action())));
+        assertTrue(provider.transition(state, actor, automated.action()).accepted());
+        assertTrue(provider.automatedAction(state, List.of()).isEmpty());
+    }
+
+    @Test
     void serviceLoaderDescriptorAndResourcesExposeOneOfficialPack() throws Exception {
         List<RulePackProvider> providers = ServiceLoader.load(RulePackProvider.class)
                 .stream()

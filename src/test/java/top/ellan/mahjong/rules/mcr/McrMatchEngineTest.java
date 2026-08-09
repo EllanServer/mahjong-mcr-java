@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -49,6 +50,16 @@ class McrMatchEngineTest {
         assertEquals(0, won.state().cumulativeScore().values().stream()
                 .mapToInt(Integer::intValue).sum());
         assertTrue(won.events().stream().anyMatch(McrMatchEvent.MatchEnded.class::isInstance));
+        var result = McrMatchResults.from(new McrProviderState(
+                won.state(),
+                List.of(
+                        new top.ellan.mahjong.spi.PlayerId(new UUID(0, 1)),
+                        new top.ellan.mahjong.spi.PlayerId(new UUID(0, 2)),
+                        new top.ellan.mahjong.spi.PlayerId(new UUID(0, 3)),
+                        new top.ellan.mahjong.spi.PlayerId(new UUID(0, 4)))))
+                .orElseThrow();
+        assertEquals("mcr.green-book.raw-score.v1", result.rankSystem());
+        assertEquals(4, result.players().size());
         McrMatchTransition rejected = engine.transition(
                 won.state(), new McrMatchAction.StartNextHand());
         assertSame(won.state(), rejected.state());

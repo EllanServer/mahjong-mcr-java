@@ -41,7 +41,7 @@ import top.ellan.mahjong.spi.TransitionDisposition;
 public final class McrRulePackProvider implements RulePackProvider {
     public static final RuleId RULE_ID = new RuleId("mcr");
     public static final ProfileId PROFILE_ID = new ProfileId("green-book");
-    public static final String PACK_VERSION = "2.0.0";
+    public static final String PACK_VERSION = "2.0.1";
     public static final String SETUP_SEED_ALGORITHM = "xor-rotate-splitmix64-finalizer-v1";
 
     private static final TileVisualId BACK = new TileVisualId("mcr:tile/back");
@@ -173,6 +173,11 @@ public final class McrRulePackProvider implements RulePackProvider {
     public Optional<ScheduledRuleAction> automatedAction(
             RuleState state, List<AutomatedPlayerActions> candidates) {
         return automation.next(requireState(state), List.copyOf(candidates));
+    }
+
+    @Override
+    public Optional<top.ellan.mahjong.spi.RuleMatchResult> matchResult(RuleState state) {
+        return McrMatchResults.from(requireState(state));
     }
 
     @Override

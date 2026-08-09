@@ -18,9 +18,10 @@ Both sources were read on 2026-08-08. GB-Mahjong revision
 migration oracle. It is never a rules authority, and a native/Java mismatch must
 be resolved against the pinned normative sources.
 
-**Migrating all 81 algorithm branches is not the same as independent golden-case
-certification of all 81 fans.** The current per-fan validation status and remaining
-release work are stated explicitly in `RULE_COVERAGE.md`.
+All 81 scoring elements now have repository-authored positive and winning near-miss
+gold cases, Green Book scoring-element bindings, and applicable non-duplication
+assertions. The separate native differential corpus remains only a migration
+regression. See `RULE_COVERAGE.md` for the executable coverage matrix.
 
 ## Build
 
@@ -161,7 +162,9 @@ public/private views, canonical events and identity-bound snapshots. The rule-pa
 JAR keeps `mahjong-rule-spi` compile-only, carries its static descriptor and MCR
 tile manifest, and is verified against SPI/TCK 1.5.0 built from pinned
 MahjongEngine commit `d4150d358d171c5ea9171a806a36b62a35930654` in GitHub Actions.
-It is an installable candidate, not a signed or independently certified release.
+It is independently gold-tested by this repository. This does not imply WMO or EMA
+endorsement; distribution authenticity is provided separately by the signed
+official rule-pack release.
 
 The provider also owns MCR bot/trustee decisions: it wins immediately, safely passes
 unwanted calls, and discards the least connected legal tile. The core supplies already-computed

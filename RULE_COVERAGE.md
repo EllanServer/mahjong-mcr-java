@@ -16,6 +16,9 @@ above; native output is never auto-blessed.
 
 Status vocabulary:
 
+- `GOLD`: independently authored positive and winning near-miss cases are bound
+  to the fan's Green Book scoring-element number, with applicable
+  non-duplication assertions.
 - `REGRESSION`: covered by an executable migrated or newly authored regression.
 - `DIFFERENTIAL`: compared with an MIT-licensed upstream fixture, subject to a
   normative-source ruling when results differ.
@@ -28,21 +31,27 @@ Status vocabulary:
 
 | Points | Fans | Status |
 |---:|---|---|
-| 88 | DASIXI, DASANYUAN, LVYISE, JIULIANBAODENG, SIGANG, LIANQIDUI, SHISANYAO | Implemented; differential/regression coverage across the tier |
-| 64 | QINGYAOJIU, XIAOSIXI, XIAOSANYUAN, ZIYISE, SIANKE, YISESHUANGLONGHUI | Implemented; differential/regression coverage across the tier |
-| 48 | YISESITONGSHUN, YISESIJIEGAO | Implemented; both under differential regression |
-| 32 | YISESIBUGAO, SANGANG, HUNYAOJIU | Implemented; differential/regression coverage across the tier |
-| 24 | QIDUI, QIXINGBUKAO, QUANSHUANGKE, QINGYISE, YISESANTONGSHUN, YISESANJIEGAO, QUANDA, QUANZHONG, QUANXIAO | Implemented; differential/regression coverage across the tier |
-| 16 | QINGLONG, SANSESHUANGLONGHUI, YISESANBUGAO, QUANDAIWU, SANTONGKE, SANANKE | Implemented; differential/regression coverage across the tier |
-| 12 | QUANBUKAO, ZUHELONG, DAYUWU, XIAOYUWU, SANFENGKE | Implemented; differential/regression coverage across the tier |
-| 8 | HUALONG, TUIBUDAO, SANSESANTONGSHUN, SANSESANJIEGAO, WUFANHU, MIAOSHOUHUICHUN, HAIDILAOYUE, GANGSHANGKAIHUA, QIANGGANGHU | Implemented; differential/regression coverage across the tier |
-| 6 | PENGPENGHU, HUNYISE, SANSESANBUGAO, WUMENQI, QUANQIUREN, SHUANGANGANG, SHUANGJIANKE | Implemented; differential/regression coverage across the tier |
-| 4 | QUANDAIYAO, BUQIUREN, SHUANGMINGGANG, HUJUEZHANG | Implemented; differential/regression coverage across the tier |
-| 2 | JIANKE, QUANFENGKE, MENFENGKE, MENQIANQING, PINGHU, SIGUIYI, SHUANGTONGKE, SHUANGANKE, ANGANG, DUANYAO | Implemented; differential/regression coverage across the tier |
-| 1 | YIBANGAO, XIXIANGFENG, LIANLIU, LAOSHAOFU, YAOJIUKE, MINGGANG, QUEYIMEN, WUZI, BIANZHANG, KANZHANG, DANDIAOJIANG, ZIMO, HUAPAI | Implemented; differential/regression coverage across the tier |
+| 88 | DASIXI, DASANYUAN, LVYISE, JIULIANBAODENG, SIGANG, LIANQIDUI, SHISANYAO | GOLD |
+| 64 | QINGYAOJIU, XIAOSIXI, XIAOSANYUAN, ZIYISE, SIANKE, YISESHUANGLONGHUI | GOLD |
+| 48 | YISESITONGSHUN, YISESIJIEGAO | GOLD |
+| 32 | YISESIBUGAO, SANGANG, HUNYAOJIU | GOLD |
+| 24 | QIDUI, QIXINGBUKAO, QUANSHUANGKE, QINGYISE, YISESANTONGSHUN, YISESANJIEGAO, QUANDA, QUANZHONG, QUANXIAO | GOLD |
+| 16 | QINGLONG, SANSESHUANGLONGHUI, YISESANBUGAO, QUANDAIWU, SANTONGKE, SANANKE | GOLD |
+| 12 | QUANBUKAO, ZUHELONG, DAYUWU, XIAOYUWU, SANFENGKE | GOLD |
+| 8 | HUALONG, TUIBUDAO, SANSESANTONGSHUN, SANSESANJIEGAO, WUFANHU, MIAOSHOUHUICHUN, HAIDILAOYUE, GANGSHANGKAIHUA, QIANGGANGHU | GOLD |
+| 6 | PENGPENGHU, HUNYISE, SANSESANBUGAO, WUMENQI, QUANQIUREN, SHUANGANGANG, SHUANGJIANKE | GOLD |
+| 4 | QUANDAIYAO, BUQIUREN, SHUANGMINGGANG, HUJUEZHANG | GOLD |
+| 2 | JIANKE, QUANFENGKE, MENFENGKE, MENQIANQING, PINGHU, SIGUIYI, SHUANGTONGKE, SHUANGANKE, ANGANG, DUANYAO | GOLD |
+| 1 | YIBANGAO, XIXIANGFENG, LIANLIU, LAOSHAOFU, YAOJIUKE, MINGGANG, QUEYIMEN, WUZI, BIANZHANG, KANZHANG, DANDIAOJIANG, ZIMO, HUAPAI | GOLD |
 
 `FanCatalogTest` asserts that the public enum contains exactly these 81 entries.
 There are no placeholder entries and no generic "unknown fan" success path.
+`Mcr81FanGoldTest` additionally requires exactly 81 unique corpus rows in this
+same Green Book order. Each row supplies a repository-authored positive hand and
+a deterministic winning near miss. Context-only fans alter exactly their source
+condition; topology-locked fans use an explicitly paired adjacent winning shape;
+all other fans use a deterministic one-tile winning mutation. Applicable
+non-duplication rules are asserted against the typed award list.
 
 ## Normative and local rulings under regression
 
@@ -78,20 +87,16 @@ Known adjudications:
 | After-kong flag without a kong | Historical caller state could be semantically incomplete | Rejected before evaluation |
 | Robbing-kong with owned copies or last-wall-tile flag | Historical validation was partial | Rejected as physically impossible |
 
-## Remaining validation work
+## Gold certification result
 
-No scoring branch is intentionally unimplemented, so the evaluator does not return
-`UNSUPPORTED` for a known MCR fan. Nevertheless, release 1.0 should remain blocked
-until an independently authored corpus provides, for each of the 81 fans:
+No scoring branch is intentionally unimplemented and the independently authored
+81-row corpus now binds every official fan to a positive, a winning near miss,
+applicable exclusion/non-duplication behavior, the pinned Green Book edition and
+its scoring-element number. GitHub Actions verifies the corpus on Java 21 and 25.
 
-1. a positive hand;
-2. a one-tile near miss;
-3. required exclusion/non-duplication cases;
-4. concealed/exposed and self-draw/discard variants where relevant;
-5. a source edition and section identifier.
-
-Imported upstream fixtures must retain the upstream MIT notice. The differential
-corpus protects migration behavior; it does not replace independent certification.
+The separate imported differential corpus remains a migration regression and
+retains the upstream MIT notice. It is not used as the rules authority and is not
+needed for a gold case to pass.
 
 ## Match-state migration status
 
@@ -159,6 +164,5 @@ bytes, recomputes payments, and reruns complete-game rotation and zero-sum check
 The repository now implements the stable SPI provider boundary and reusable TCK,
 including compile-only parent-loaded SPI isolation, opaque actions, authorized
 views, canonical events, identity-bound snapshots, ServiceLoader metadata and the
-static MCR asset manifest. Official release remains blocked by the independent
-81-fan certification corpus described above, packet-level privacy integration,
-signing and publication through the official registry.
+static MCR asset manifest. The remaining distribution step is signing and
+publication through the official registry.

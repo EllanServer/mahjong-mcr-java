@@ -13,12 +13,14 @@ public final class McrProviderState implements RuleState {
     private final PlayerId[] playersByInitialSeat;
     private final McrProjectionIds projectionIds;
     private final short[] wallSlotsByProjection;
+    private final McrOpeningLayout openingLayout;
 
     McrProviderState(McrMatchState match, List<PlayerId> playersByInitialSeat) {
         this(
                 match,
                 validatedPlayers(playersByInitialSeat),
                 McrProjectionIds.forHand(Objects.requireNonNull(match, "match").currentHandSeed()),
+                null,
                 null);
     }
 
@@ -26,13 +28,17 @@ public final class McrProviderState implements RuleState {
             McrMatchState match,
             PlayerId[] playersByInitialSeat,
             McrProjectionIds projectionIds,
-            short[] wallSlotsByProjection) {
+            short[] wallSlotsByProjection,
+            McrOpeningLayout openingLayout) {
         this.match = Objects.requireNonNull(match, "match");
         this.playersByInitialSeat = playersByInitialSeat;
         this.projectionIds = Objects.requireNonNull(projectionIds, "projectionIds");
         this.wallSlotsByProjection = wallSlotsByProjection == null
                 ? createWallSlots(match.currentHandSeed(), projectionIds)
                 : wallSlotsByProjection;
+        this.openingLayout = openingLayout == null
+                ? McrOpeningLayout.forMatch(match)
+                : openingLayout;
     }
 
     public McrMatchState match() {
@@ -66,15 +72,23 @@ public final class McrProviderState implements RuleState {
         return Short.toUnsignedInt(wallSlotsByProjection[(int) projectionId]);
     }
 
+    McrOpeningLayout openingLayout() {
+        return openingLayout;
+    }
+
     McrProviderState withMatch(McrMatchState nextMatch) {
         if (match.currentHandSeed() == nextMatch.currentHandSeed()) {
             return new McrProviderState(
-                    nextMatch, playersByInitialSeat, projectionIds, wallSlotsByProjection);
+                    nextMatch,
+                    playersByInitialSeat,
+                    projectionIds,
+                    wallSlotsByProjection,
+                    openingLayout);
         }
         McrProjectionIds nextProjectionIds =
                 McrProjectionIds.forHand(nextMatch.currentHandSeed());
         return new McrProviderState(
-                nextMatch, playersByInitialSeat, nextProjectionIds, null);
+                nextMatch, playersByInitialSeat, nextProjectionIds, null, null);
     }
 
     private static PlayerId[] validatedPlayers(List<PlayerId> players) {

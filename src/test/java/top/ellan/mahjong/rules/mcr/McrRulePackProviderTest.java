@@ -112,6 +112,21 @@ class McrRulePackProviderTest {
         assertEquals(List.of(18, 18, 18, 18),
                 publicView.tablePresentation().wall().stackCountsBySide());
         assertEquals(144, publicView.tablePresentation().wall().tileCapacity());
+        var opening = publicView.tablePresentation().opening().orElseThrow();
+        assertEquals(2, opening.rolls().size());
+        assertEquals(
+                (publicView.tablePresentation().dealerSeat().orElseThrow().value()
+                                + opening.rolls().getFirst().total()
+                                - 1)
+                        % 4,
+                opening.openDoorSeat().value());
+        assertEquals(
+                opening.rolls().getFirst().total()
+                        + opening.rolls().getLast().total(),
+                opening.breakStackOffset());
+        assertEquals(
+                (opening.openDoorSeat().value() * 18 + opening.breakStackOffset()) % 72,
+                publicView.tablePresentation().wall().drawStartStack());
         assertTrue(publicView.tiles().stream()
                 .filter(tile -> tile.zone() == RuleViewZone.WALL
                         || tile.zone() == RuleViewZone.HAND)

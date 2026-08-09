@@ -29,8 +29,6 @@ import top.ellan.mahjong.spi.RuleTilePresentation;
 import top.ellan.mahjong.spi.RuleTransition;
 import top.ellan.mahjong.spi.RuleViewTile;
 import top.ellan.mahjong.spi.RuleViewZone;
-import top.ellan.mahjong.spi.RuleWallDirection;
-import top.ellan.mahjong.spi.RuleWallPresentation;
 import top.ellan.mahjong.spi.ScheduledRuleAction;
 import top.ellan.mahjong.spi.SeatId;
 import top.ellan.mahjong.spi.SpiVersion;
@@ -47,9 +45,6 @@ public final class McrRulePackProvider implements RulePackProvider {
 
     private static final TileVisualId BACK = new TileVisualId("mcr:tile/back");
     private static final TileVisualId[] FACE_VISUALS = createFaceVisuals();
-    private static final RuleWallPresentation PHYSICAL_WALL =
-            new RuleWallPresentation(
-                    List.of(18, 18, 18, 18), 0, RuleWallDirection.CLOCKWISE);
     private static final RulePackDescriptor DESCRIPTOR = descriptorValue();
 
     private final McrMatchEngine engine = new McrMatchEngine();
@@ -207,13 +202,14 @@ public final class McrRulePackProvider implements RulePackProvider {
                 attributes,
                 new RuleTablePresentation(
                         4,
-                        PHYSICAL_WALL,
+                        current.openingLayout().wall(),
                         6,
                         Optional.of(new SeatId(
                                 current.match().playerAt(Wind.EAST).ordinal())),
                         Optional.of(new SeatId(
                                 current.match().playerAt(view.currentSeat()).ordinal())),
-                        lastDiscard));
+                        lastDiscard,
+                        Optional.of(current.openingLayout().opening())));
     }
 
     @Override

@@ -53,6 +53,7 @@ There are no placeholder entries and no generic "unknown fan" success path.
 | Eight-point minimum | Uses `qualifyingFan`; flowers cannot satisfy it |
 | Self-draw wait | A seven-point discard result may be a legal eight-point self-draw wait |
 | Settlement | Discard: discarder pays fan+8, others 8; self draw: every opponent pays fan+8; deltas sum to zero |
+| Opening wall | Two deterministic two-dice rolls; first total selects the open side and both totals select the break, while CraftEngine owns presentation |
 
 The formal multi-wait interpretation is intentionally availability-independent for
 fan classification. The public shape/wait APIs still reject a physically impossible

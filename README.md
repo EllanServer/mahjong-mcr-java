@@ -82,6 +82,12 @@ is itself a flower is exposed and replaced again from the back. The resulting
 `McrInitialDeal` validates all 144 identities, contains no flower in a concealed
 hand, and exposes no mutable collection.
 
+`McrOpeningLayout` derives the two official two-dice rolls once from the immutable
+hand seed. The first total identifies the second roller/open side and both totals
+identify the wall break. The SPI publishes only these rule facts plus the 18-stack
+wall geometry. CraftEngine owns dice/furniture assets, transforms, culling and the
+bounded opening animation; the rule pack contains no renderer or animation loop.
+
 The exact physical state is the foundation of the complete-game implementation.
 `McrReactionWindow` accepts only alternatives issued by the rules engine:
 it accepts only exact legal alternatives issued by the rules engine, collects one
@@ -153,8 +159,8 @@ payments and reruns both hand and complete-game invariants.
 `ServiceLoader`: deterministic match creation, player-authorized opaque actions,
 public/private views, canonical events and identity-bound snapshots. The rule-pack
 JAR keeps `mahjong-rule-spi` compile-only, carries its static descriptor and MCR
-tile manifest, and is verified against SPI/TCK 1.3.0 built from pinned
-MahjongEngine commit `a906828443bdb2a11cb7be2086977212825a4c5d` in GitHub Actions.
+tile manifest, and is verified against SPI/TCK 1.4.0 built from pinned
+MahjongEngine commit `1f3acd32f27d0f76cef938d34c1de44b99079f18` in GitHub Actions.
 It is an installable candidate, not a signed or independently certified release.
 
 ## Representation and performance

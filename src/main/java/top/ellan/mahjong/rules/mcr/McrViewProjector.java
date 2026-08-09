@@ -6,6 +6,8 @@ import java.util.Optional;
 
 /** Pure public/private projection with per-hand opaque IDs and no hidden faces. */
 public final class McrViewProjector {
+    private static final Wind[] SEATS = Wind.values();
+
     public McrPublicView publicView(McrRoundState state, long handSalt) {
         return publicView(state, McrProjectionIds.forHand(handSalt));
     }
@@ -24,7 +26,7 @@ public final class McrViewProjector {
                 .map(McrRoundOutcome.Win::winner)
                 .orElse(null);
         boolean ended = state.phase() == McrRoundPhase.ENDED;
-        for (Wind seat : Wind.values()) {
+        for (Wind seat : SEATS) {
             List<McrTileInstance> hand = state.hand(seat);
             for (int index = 0; index < hand.size(); index++) {
                 tiles.add(project(
@@ -136,9 +138,9 @@ public final class McrViewProjector {
         return top.ellan.mahjong.spi.RuleMeldPresentation.tile(
                 meldIndex,
                 meld.origin() == McrMeldOrigin.ADDED_KONG ? 3 : meld.tiles().size(),
-                Wind.values().length,
-                new top.ellan.mahjong.spi.SeatId(owner.ordinal()),
-                new top.ellan.mahjong.spi.SeatId(meld.sourceSeat().ordinal()),
+                SEATS.length,
+                owner.ordinal(),
+                meld.sourceSeat().ordinal(),
                 role,
                 role == top.ellan.mahjong.spi.RuleMeldTileRole.ORDINARY
                         ? ordinaryOrdinal

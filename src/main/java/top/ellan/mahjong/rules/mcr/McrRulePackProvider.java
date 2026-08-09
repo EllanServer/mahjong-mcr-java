@@ -6,6 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import top.ellan.mahjong.spi.LegalAction;
 import top.ellan.mahjong.spi.MatchPlayer;
@@ -23,9 +24,13 @@ import top.ellan.mahjong.spi.RulePackProvider;
 import top.ellan.mahjong.spi.RuleProfileDescriptor;
 import top.ellan.mahjong.spi.RuleState;
 import top.ellan.mahjong.spi.RuleStateSnapshot;
+import top.ellan.mahjong.spi.RuleTablePresentation;
+import top.ellan.mahjong.spi.RuleTilePresentation;
 import top.ellan.mahjong.spi.RuleTransition;
 import top.ellan.mahjong.spi.RuleViewTile;
 import top.ellan.mahjong.spi.RuleViewZone;
+import top.ellan.mahjong.spi.RuleWallDirection;
+import top.ellan.mahjong.spi.RuleWallPresentation;
 import top.ellan.mahjong.spi.SeatId;
 import top.ellan.mahjong.spi.SpiVersion;
 import top.ellan.mahjong.spi.TileInstanceId;
@@ -40,6 +45,10 @@ public final class McrRulePackProvider implements RulePackProvider {
     public static final String SETUP_SEED_ALGORITHM = "xor-rotate-splitmix64-finalizer-v1";
 
     private static final TileVisualId BACK = new TileVisualId("mcr:tile/back");
+    private static final TileVisualId[] FACE_VISUALS = createFaceVisuals();
+    private static final RuleWallPresentation PHYSICAL_WALL =
+            new RuleWallPresentation(
+                    List.of(18, 18, 18, 18), 0, RuleWallDirection.CLOCKWISE);
     private static final RulePackDescriptor DESCRIPTOR = descriptorValue();
 
     private final McrMatchEngine engine = new McrMatchEngine();
@@ -94,7 +103,8 @@ public final class McrRulePackProvider implements RulePackProvider {
         Wind logicalSeat = current.match().logicalSeatOf(initialSeat);
         McrMatchAction decoded;
         try {
-            decoded = McrSpiActions.decode(current.match(), logicalSeat, action);
+            decoded = McrSpiActions.decode(
+                    current.match(), current.projectionIds(), logicalSeat, action);
         } catch (IllegalArgumentException invalid) {
             return RuleTransition.rejected(current, "invalid_action_payload");
         }
@@ -134,10 +144,11 @@ public final class McrRulePackProvider implements RulePackProvider {
         List<McrLegalAction> domain = legalActions.forPlayer(
                 current.match().roundState(),
                 logicalSeat,
-                current.match().currentHandSeed());
+                current.projectionIds());
         ArrayList<LegalAction> result = new ArrayList<>(domain.size());
         for (McrLegalAction legal : domain) {
-            result.add(McrSpiActions.encode(current.match(), logicalSeat, legal));
+            result.add(McrSpiActions.encode(
+                    current.projectionIds(), logicalSeat, legal));
         }
         return List.copyOf(result);
     }
@@ -146,10 +157,10 @@ public final class McrRulePackProvider implements RulePackProvider {
     public PublicRuleView publicView(RuleState state, long revision) {
         McrProviderState current = requireState(state);
         McrPublicView view = views.publicView(
-                current.match().roundState(), current.match().currentHandSeed());
+                current.match().roundState(), current.projectionIds());
         ArrayList<RuleViewTile> tiles = new ArrayList<>(view.tiles().size());
         for (McrViewTile tile : view.tiles()) {
-            tiles.add(ruleViewTile(current.match(), tile));
+            tiles.add(ruleViewTile(current, tile));
         }
         LinkedHashMap<String, String> attributes = new LinkedHashMap<>();
         attributes.put("profile", PROFILE_ID.value());
@@ -164,7 +175,26 @@ public final class McrRulePackProvider implements RulePackProvider {
         attributes.put("cumulativeScore", score(current.match().cumulativeScore()));
         view.winner().ifPresent(winner ->
                 attributes.put("winner", name(current.match().playerAt(winner))));
-        return new PublicRuleView(revision, name(current.match().phase()), tiles, attributes);
+        McrRoundState round = current.match().roundState();
+        Optional<TileInstanceId> lastDiscard = round.reactionWindow()
+                .filter(window -> window.origin() == McrReactionOrigin.DISCARD)
+                .map(McrReactionWindow::discard)
+                .map(current.projectionIds()::project)
+                .map(TileInstanceId::new);
+        return new PublicRuleView(
+                revision,
+                name(current.match().phase()),
+                tiles,
+                attributes,
+                new RuleTablePresentation(
+                        4,
+                        PHYSICAL_WALL,
+                        6,
+                        Optional.of(new SeatId(
+                                current.match().playerAt(Wind.EAST).ordinal())),
+                        Optional.of(new SeatId(
+                                current.match().playerAt(view.currentSeat()).ordinal())),
+                        lastDiscard));
     }
 
     @Override
@@ -176,14 +206,15 @@ public final class McrRulePackProvider implements RulePackProvider {
         }
         Wind logicalSeat = current.match().logicalSeatOf(initialSeat);
         McrPrivateView view = views.privateView(
-                current.match().roundState(), logicalSeat, current.match().currentHandSeed());
+                current.match().roundState(), logicalSeat, current.projectionIds());
         ArrayList<RuleViewTile> tiles = new ArrayList<>(view.concealedTiles().size());
         for (McrViewTile tile : view.concealedTiles()) {
-            tiles.add(ruleViewTile(current.match(), tile));
+            tiles.add(ruleViewTile(current, tile));
         }
         return new PrivateRuleView(
                 revision,
                 viewer,
+                new SeatId(initialSeat.ordinal()),
                 tiles,
                 Map.of(
                         "initialSeat", name(initialSeat),
@@ -265,23 +296,37 @@ public final class McrRulePackProvider implements RulePackProvider {
         return mcr;
     }
 
-    private static RuleViewTile ruleViewTile(McrMatchState match, McrViewTile tile) {
+    private static RuleViewTile ruleViewTile(McrProviderState state, McrViewTile tile) {
         TileVisualId visual = tile.faceUp()
-                ? new TileVisualId("mcr:tile/" + name(tile.face().orElseThrow())) : BACK;
+                ? FACE_VISUALS[tile.face().orElseThrow().ordinal()]
+                : BACK;
+        int layoutIndex = tile.zone() == McrViewZone.WALL
+                ? state.wallSlot(tile.projectionId())
+                : tile.index();
         return new RuleViewTile(
                 new TileInstanceId(tile.projectionId()),
                 visual,
-                tile.owner().map(match::playerAt).map(seat -> new SeatId(seat.ordinal())),
+                tile.owner()
+                        .map(state.match()::playerAt)
+                        .map(seat -> new SeatId(seat.ordinal())),
                 zone(tile.zone()),
                 tile.index(),
-                tile.faceUp());
+                tile.faceUp(),
+                new RuleTilePresentation(
+                        layoutIndex,
+                        tile.sideways()
+                                ? top.ellan.mahjong.spi.RuleTileRotation.CLOCKWISE
+                                : top.ellan.mahjong.spi.RuleTileRotation.NATURAL,
+                        0,
+                        tile.emphasized()));
     }
 
     private static RuleViewZone zone(McrViewZone zone) {
         return switch (zone) {
             case WALL -> RuleViewZone.WALL;
             case CONCEALED_HAND -> RuleViewZone.HAND;
-            case FLOWER, WIN_CLAIM -> RuleViewZone.AUXILIARY;
+            case FLOWER -> RuleViewZone.FLOWER;
+            case WIN_CLAIM -> RuleViewZone.WIN_CLAIM;
             case RIVER -> RuleViewZone.DISCARD;
             case MELD -> RuleViewZone.MELD;
         };
@@ -290,6 +335,19 @@ public final class McrRulePackProvider implements RulePackProvider {
     private static String score(Map<Wind, Integer> score) {
         return score.get(Wind.EAST) + "," + score.get(Wind.SOUTH) + ","
                 + score.get(Wind.WEST) + "," + score.get(Wind.NORTH);
+    }
+
+    private static String visualName(Tile tile) {
+        return tile == Tile.BAMBOO_FLOWER ? "bamboo" : name(tile);
+    }
+
+    private static TileVisualId[] createFaceVisuals() {
+        Tile[] tiles = Tile.values();
+        TileVisualId[] result = new TileVisualId[tiles.length];
+        for (Tile tile : tiles) {
+            result[tile.ordinal()] = new TileVisualId("mcr:tile/" + visualName(tile));
+        }
+        return result;
     }
 
     private static String name(Enum<?> value) {

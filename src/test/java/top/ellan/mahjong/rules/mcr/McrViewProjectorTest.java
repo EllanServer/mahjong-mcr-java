@@ -113,6 +113,8 @@ class McrViewProjectorTest {
                 java.util.Optional.empty(),
                 McrViewZone.WALL,
                 0,
+                false,
+                false,
                 false).faceUp());
     }
 

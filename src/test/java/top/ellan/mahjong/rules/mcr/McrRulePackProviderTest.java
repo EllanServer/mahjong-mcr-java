@@ -106,6 +106,9 @@ class McrRulePackProviderTest {
         assertEquals(144, publicView.tiles().size());
         assertEquals(144, new HashSet<>(publicView.tiles().stream()
                 .map(tile -> tile.instanceId().value()).toList()).size());
+        assertEquals(List.of(18, 18, 18, 18),
+                publicView.tablePresentation().wall().stackCountsBySide());
+        assertEquals(144, publicView.tablePresentation().wall().tileCapacity());
         assertTrue(publicView.tiles().stream()
                 .filter(tile -> tile.zone() == RuleViewZone.WALL
                         || tile.zone() == RuleViewZone.HAND)
@@ -115,6 +118,7 @@ class McrRulePackProviderTest {
         PlayerId east = players.getFirst().playerId();
         PrivateRuleView privateView = provider.privateView(state, east, 7);
         assertEquals(east, privateView.viewer());
+        assertEquals(new SeatId(0), privateView.seat());
         assertEquals(14, privateView.tiles().size());
         assertTrue(privateView.tiles().stream().allMatch(tile -> tile.faceUp()
                 && tile.zone() == RuleViewZone.HAND
@@ -140,6 +144,10 @@ class McrRulePackProviderTest {
             assertEquals(
                     Integer.parseInt(discard.key().substring("discard:".length())),
                     Byte.toUnsignedInt(payload[0]));
+            assertEquals(top.ellan.mahjong.spi.ActionPlacement.HAND_TILE,
+                    discard.actionPresentation().placement());
+            assertEquals(Byte.toUnsignedInt(payload[0]),
+                    discard.actionPresentation().targetTile().orElseThrow().value());
         }
 
         RuleTransition forged = provider.transition(

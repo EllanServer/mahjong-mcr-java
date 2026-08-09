@@ -1,7 +1,6 @@
 package top.ellan.mahjong.rules.mcr;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -22,11 +21,16 @@ public final class McrLegalActionGenerator {
 
     /** Returns only commands authorized for {@code actor} at the supplied revision. */
     public List<McrLegalAction> forPlayer(McrRoundState state, Wind actor, long handSalt) {
+        return forPlayer(state, actor, McrProjectionIds.forHand(handSalt));
+    }
+
+    List<McrLegalAction> forPlayer(
+            McrRoundState state, Wind actor, McrProjectionIds ids) {
         if (state == null || actor == null) {
             throw new IllegalArgumentException("state and actor are required");
         }
+        if (ids == null) throw new IllegalArgumentException("projection ids are required");
         if (state.phase() == McrRoundPhase.ENDED) return List.of();
-        McrProjectionIds ids = McrProjectionIds.forHand(handSalt);
         if (state.phase() == McrRoundPhase.REACTIONS) {
             return reactionActions(state, actor, ids);
         }
@@ -105,14 +109,14 @@ public final class McrLegalActionGenerator {
         StringBuilder key = new StringBuilder("respond:")
                 .append(reaction.type().name().toLowerCase(java.util.Locale.ROOT));
         if (!reaction.concealedTiles().isEmpty()) {
-            List<Long> projected = reaction.concealedTiles().stream()
-                    .map(ids::project)
-                    .sorted(Comparator.naturalOrder())
-                    .toList();
+            long[] projected = reaction.concealedTiles().stream()
+                    .mapToLong(ids::project)
+                    .sorted()
+                    .toArray();
             key.append(':');
-            for (int index = 0; index < projected.size(); index++) {
+            for (int index = 0; index < projected.length; index++) {
                 if (index > 0) key.append('-');
-                key.append(projected.get(index));
+                key.append(projected[index]);
             }
         }
         return key.toString();

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import top.ellan.mahjong.spi.ActionPresentation;
 import top.ellan.mahjong.spi.LegalAction;
 import top.ellan.mahjong.spi.RuleAction;
 
@@ -13,39 +13,51 @@ final class McrSpiActions {
     private McrSpiActions() {}
 
     static LegalAction encode(
-            McrMatchState state, Wind actor, McrLegalAction legal) {
-        RuleAction action = encodeAction(state, actor, legal.action());
+            McrProjectionIds ids,
+            Wind actor,
+            McrLegalAction legal) {
+        RuleAction action = encodeAction(ids, actor, legal.action());
+        ActionPresentation presentation = action.type().equals("discard")
+                ? ActionPresentation.handTile(
+                        "action.discard",
+                        new top.ellan.mahjong.spi.TileInstanceId(
+                                Byte.toUnsignedInt(action.payload()[0])))
+                : ActionPresentation.actionRow("action." + legal.key());
         return new LegalAction(
                 legal.key(),
                 action,
-                Map.of("label", legal.key(), "type", action.type()));
+                presentation);
     }
 
     static LegalAction startNextHand() {
         return new LegalAction(
                 "start_next_hand",
                 new RuleAction("start_next_hand", new byte[0]),
-                Map.of("label", "start_next_hand", "type", "start_next_hand"));
+                ActionPresentation.actionRow("action.start_next_hand"));
     }
 
-    static McrMatchAction decode(McrMatchState state, Wind actor, RuleAction action) {
+    static McrMatchAction decode(
+            McrMatchState state,
+            McrProjectionIds ids,
+            Wind actor,
+            RuleAction action) {
         if (state == null || actor == null || action == null) {
             throw new IllegalArgumentException("state, actor and action are required");
         }
         byte[] payload = action.payload();
         return switch (action.type()) {
             case "discard" -> play(new McrRoundAction.Discard(
-                    actor, resolveOne(state, actor, payload, "discard")));
+                    actor, resolveOne(state, ids, actor, payload, "discard")));
             case "self_draw_win" -> {
                 requireEmpty(payload);
                 yield play(new McrRoundAction.SelfDrawWin(actor));
             }
             case "concealed_kong" -> play(new McrRoundAction.ConcealedKong(
-                    actor, resolveMany(state, actor, payload, 4, "concealed kong")));
+                    actor, resolveMany(state, ids, actor, payload, 4, "concealed kong")));
             case "added_kong" -> play(new McrRoundAction.AddedKong(
-                    actor, resolveOne(state, actor, payload, "added kong")));
+                    actor, resolveOne(state, ids, actor, payload, "added kong")));
             case "respond" -> play(new McrRoundAction.React(
-                    decodeReaction(state, actor, payload)));
+                    decodeReaction(state, ids, actor, payload)));
             case "start_next_hand" -> {
                 requireEmpty(payload);
                 yield new McrMatchAction.StartNextHand();
@@ -55,8 +67,9 @@ final class McrSpiActions {
     }
 
     private static RuleAction encodeAction(
-            McrMatchState state, Wind actor, McrRoundAction action) {
-        McrProjectionIds ids = McrProjectionIds.forHand(state.currentHandSeed());
+            McrProjectionIds ids,
+            Wind actor,
+            McrRoundAction action) {
         if (action instanceof McrRoundAction.Discard discard) {
             requireActor(actor, discard.seat());
             return oneProjection("discard", ids.project(discard.tile()));
@@ -87,7 +100,10 @@ final class McrSpiActions {
     }
 
     private static McrReaction decodeReaction(
-            McrMatchState state, Wind actor, byte[] payload) {
+            McrMatchState state,
+            McrProjectionIds ids,
+            Wind actor,
+            byte[] payload) {
         if (payload.length < 2) {
             throw new IllegalArgumentException("response payload is truncated");
         }
@@ -101,7 +117,7 @@ final class McrSpiActions {
         }
         byte[] projected = Arrays.copyOfRange(payload, 2, payload.length);
         List<McrTileInstance> concealed = resolveMany(
-                state, actor, projected, count, "reaction");
+                state, ids, actor, projected, count, "reaction");
         McrReactionWindow window = state.roundState().reactionWindow().orElseThrow(
                 () -> new IllegalArgumentException("there is no active reaction window"));
         return new McrReaction(
@@ -112,12 +128,17 @@ final class McrSpiActions {
     }
 
     private static McrTileInstance resolveOne(
-            McrMatchState state, Wind actor, byte[] payload, String name) {
-        return resolveMany(state, actor, payload, 1, name).getFirst();
+            McrMatchState state,
+            McrProjectionIds ids,
+            Wind actor,
+            byte[] payload,
+            String name) {
+        return resolveMany(state, ids, actor, payload, 1, name).getFirst();
     }
 
     private static List<McrTileInstance> resolveMany(
             McrMatchState state,
+            McrProjectionIds ids,
             Wind actor,
             byte[] payload,
             int expected,
@@ -125,7 +146,6 @@ final class McrSpiActions {
         if (payload.length != expected) {
             throw new IllegalArgumentException(name + " payload has the wrong length");
         }
-        McrProjectionIds ids = McrProjectionIds.forHand(state.currentHandSeed());
         ArrayList<McrTileInstance> result = new ArrayList<>(expected);
         HashSet<Integer> unique = new HashSet<>();
         for (byte value : payload) {

@@ -7,8 +7,12 @@ import java.util.Optional;
 /** Pure public/private projection with per-hand opaque IDs and no hidden faces. */
 public final class McrViewProjector {
     public McrPublicView publicView(McrRoundState state, long handSalt) {
+        return publicView(state, McrProjectionIds.forHand(handSalt));
+    }
+
+    McrPublicView publicView(McrRoundState state, McrProjectionIds ids) {
         if (state == null) throw new IllegalArgumentException("state is required");
-        McrProjectionIds ids = McrProjectionIds.forHand(handSalt);
+        if (ids == null) throw new IllegalArgumentException("projection ids are required");
         ArrayList<McrViewTile> tiles = new ArrayList<>(McrTileInstance.PHYSICAL_TILE_COUNT);
         List<McrTileInstance> wall = state.wall().remainingTiles();
         for (int index = 0; index < wall.size(); index++) {
@@ -40,7 +44,14 @@ public final class McrViewProjector {
                 McrPhysicalDiscard discard = river.get(index);
                 if (discard.status() != McrDiscardStatus.MELD_CLAIMED) {
                     tiles.add(project(
-                            ids, discard.tile(), seat, McrViewZone.RIVER, index, true));
+                            ids,
+                            discard.tile(),
+                            seat,
+                            McrViewZone.RIVER,
+                            index,
+                            true,
+                            false,
+                            discard.status() == McrDiscardStatus.PENDING));
                 }
             }
             List<McrPhysicalMeld> melds = state.melds(seat);
@@ -54,7 +65,9 @@ public final class McrViewProjector {
                             seat,
                             McrViewZone.MELD,
                             meldIndex * 4 + tileIndex,
-                            visible));
+                            visible,
+                            meld.tiles().get(tileIndex).equals(meld.claimedDiscard()),
+                            false));
                 }
             }
         }
@@ -74,10 +87,15 @@ public final class McrViewProjector {
     }
 
     public McrPrivateView privateView(McrRoundState state, Wind viewer, long handSalt) {
+        return privateView(state, viewer, McrProjectionIds.forHand(handSalt));
+    }
+
+    McrPrivateView privateView(
+            McrRoundState state, Wind viewer, McrProjectionIds ids) {
         if (state == null || viewer == null) {
             throw new IllegalArgumentException("state and viewer are required");
         }
-        McrProjectionIds ids = McrProjectionIds.forHand(handSalt);
+        if (ids == null) throw new IllegalArgumentException("projection ids are required");
         List<McrTileInstance> hand = state.hand(viewer);
         ArrayList<McrViewTile> tiles = new ArrayList<>(hand.size());
         for (int index = 0; index < hand.size(); index++) {
@@ -105,6 +123,28 @@ public final class McrViewProjector {
                 Optional.ofNullable(owner),
                 zone,
                 index,
-                faceUp);
+                faceUp,
+                false,
+                false);
+    }
+
+    private static McrViewTile project(
+            McrProjectionIds ids,
+            McrTileInstance tile,
+            Wind owner,
+            McrViewZone zone,
+            int index,
+            boolean faceUp,
+            boolean sideways,
+            boolean emphasized) {
+        return new McrViewTile(
+                ids.project(tile),
+                faceUp ? Optional.of(tile.kind()) : Optional.empty(),
+                Optional.ofNullable(owner),
+                zone,
+                index,
+                faceUp,
+                sideways,
+                emphasized);
     }
 }

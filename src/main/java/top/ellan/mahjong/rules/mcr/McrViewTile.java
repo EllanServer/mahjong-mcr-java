@@ -9,7 +9,9 @@ public record McrViewTile(
         Optional<Wind> owner,
         McrViewZone zone,
         int index,
-        boolean faceUp) {
+        boolean faceUp,
+        boolean sideways,
+        boolean emphasized) {
 
     public McrViewTile {
         if (projectionId < 0 || projectionId >= McrTileInstance.PHYSICAL_TILE_COUNT

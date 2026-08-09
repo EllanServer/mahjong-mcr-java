@@ -153,7 +153,7 @@ payments and reruns both hand and complete-game invariants.
 `ServiceLoader`: deterministic match creation, player-authorized opaque actions,
 public/private views, canonical events and identity-bound snapshots. The rule-pack
 JAR keeps `mahjong-rule-spi` compile-only, carries its static descriptor and MCR
-tile manifest, and is verified against SPI/TCK 1.1.0 built from pinned
+tile manifest, and is verified against SPI/TCK 1.2.0 built from pinned
 MahjongEngine commit `a906828443bdb2a11cb7be2086977212825a4c5d` in GitHub Actions.
 It is an installable candidate, not a signed or independently certified release.
 

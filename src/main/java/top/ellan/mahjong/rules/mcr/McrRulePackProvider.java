@@ -31,6 +31,7 @@ import top.ellan.mahjong.spi.RuleViewTile;
 import top.ellan.mahjong.spi.RuleViewZone;
 import top.ellan.mahjong.spi.RuleWallDirection;
 import top.ellan.mahjong.spi.RuleWallPresentation;
+import top.ellan.mahjong.spi.ScheduledRuleAction;
 import top.ellan.mahjong.spi.SeatId;
 import top.ellan.mahjong.spi.SpiVersion;
 import top.ellan.mahjong.spi.TileInstanceId;
@@ -53,6 +54,8 @@ public final class McrRulePackProvider implements RulePackProvider {
 
     private final McrMatchEngine engine = new McrMatchEngine();
     private final McrLegalActionGenerator legalActions = new McrLegalActionGenerator();
+    private final McrScheduledActionPolicy scheduledActions =
+            new McrScheduledActionPolicy(legalActions);
     private final McrViewProjector views = new McrViewProjector();
     private final McrProviderSnapshotCodec snapshots = new McrProviderSnapshotCodec();
 
@@ -102,14 +105,23 @@ public final class McrRulePackProvider implements RulePackProvider {
         }
         Wind logicalSeat = current.match().logicalSeatOf(initialSeat);
         McrMatchAction decoded;
-        try {
-            decoded = McrSpiActions.decode(
-                    current.match(), current.projectionIds(), logicalSeat, action);
-        } catch (IllegalArgumentException invalid) {
-            return RuleTransition.rejected(current, "invalid_action_payload");
+        if (scheduledActions.isActorOwned(action)) {
+            Optional<McrMatchAction> actorOwned =
+                    scheduledActions.decodeActorOwned(current, actor, action);
+            if (actorOwned.isEmpty()) {
+                return RuleTransition.rejected(current, "actor_action_not_authorized");
+            }
+            decoded = actorOwned.orElseThrow();
+        } else {
+            try {
+                decoded = McrSpiActions.decode(
+                        current.match(), current.projectionIds(), logicalSeat, action);
+            } catch (IllegalArgumentException invalid) {
+                return RuleTransition.rejected(current, "invalid_action_payload");
+            }
         }
         if (decoded instanceof McrMatchAction.StartNextHand
-                && !mayStartNextHand(current.match(), initialSeat)) {
+                && !scheduledActions.mayStartNextHand(current, actor)) {
             return RuleTransition.rejected(current, "next_dealer_required");
         }
 
@@ -137,7 +149,7 @@ public final class McrRulePackProvider implements RulePackProvider {
             return List.of();
         }
         if (current.match().phase() == McrMatchPhase.BETWEEN_HANDS) {
-            return mayStartNextHand(current.match(), initialSeat)
+            return scheduledActions.mayStartNextHand(current, actor)
                     ? List.of(McrSpiActions.startNextHand()) : List.of();
         }
         Wind logicalSeat = current.match().logicalSeatOf(initialSeat);
@@ -151,6 +163,11 @@ public final class McrRulePackProvider implements RulePackProvider {
                     current.projectionIds(), logicalSeat, legal));
         }
         return List.copyOf(result);
+    }
+
+    @Override
+    public Optional<ScheduledRuleAction> scheduledAction(RuleState state) {
+        return scheduledActions.next(requireState(state));
     }
 
     @Override
@@ -260,12 +277,6 @@ public final class McrRulePackProvider implements RulePackProvider {
         value = (value ^ value >>> 30) * 0xBF58476D1CE4E5B9L;
         value = (value ^ value >>> 27) * 0x94D049BB133111EBL;
         return value ^ value >>> 31;
-    }
-
-    private static boolean mayStartNextHand(McrMatchState state, Wind initialSeat) {
-        if (state.phase() != McrMatchPhase.BETWEEN_HANDS) return false;
-        Wind nextDealer = Wind.values()[state.handsCompleted() % Wind.values().length];
-        return initialSeat == nextDealer;
     }
 
     private static TransitionDisposition disposition(

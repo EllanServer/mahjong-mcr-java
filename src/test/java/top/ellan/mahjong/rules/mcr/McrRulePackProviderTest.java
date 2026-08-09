@@ -14,6 +14,7 @@ import top.ellan.mahjong.spi.RuleState;
 import top.ellan.mahjong.spi.RuleStateSnapshot;
 import top.ellan.mahjong.spi.RuleTransition;
 import top.ellan.mahjong.spi.RuleViewZone;
+import top.ellan.mahjong.spi.ScheduledRuleAction;
 import top.ellan.mahjong.spi.SeatId;
 import top.ellan.mahjong.spi.TransitionDisposition;
 import top.ellan.mahjong.tck.RulePackTck;
@@ -194,6 +195,34 @@ class McrRulePackProviderTest {
     }
 
     @Test
+    void scheduledActionsCloseReactionsAndAdvanceOnlyThroughCanonicalTransitions() {
+        McrProviderState reacting = reactingProviderState();
+        ScheduledRuleAction close = provider.scheduledAction(reacting).orElseThrow();
+        assertEquals(players.getFirst().playerId(), close.actor());
+        assertEquals(McrScheduledActionPolicy.CLOSE_REACTIONS_TYPE, close.action().type());
+        assertEquals(McrScheduledActionPolicy.REACTION_DELAY, close.delay());
+
+        RuleTransition closed = provider.transition(reacting, close.actor(), close.action());
+        assertTrue(closed.accepted());
+        McrProviderState afterClose = (McrProviderState) closed.nextState();
+        assertFalse(afterClose.match().roundState().phase() == McrRoundPhase.REACTIONS);
+        assertTrue(provider.scheduledAction(afterClose).isEmpty());
+
+        PlayerId wrongActor = players.get(1).playerId();
+        RuleTransition forged = provider.transition(reacting, wrongActor, close.action());
+        assertEquals(TransitionDisposition.REJECTED, forged.disposition());
+        assertSame(reacting, forged.nextState());
+
+        McrProviderState boundary = boundaryProviderState();
+        ScheduledRuleAction nextHand = provider.scheduledAction(boundary).orElseThrow();
+        assertEquals(players.get(1).playerId(), nextHand.actor());
+        assertEquals("start_next_hand", nextHand.action().type());
+        assertEquals(McrScheduledActionPolicy.NEXT_HAND_DELAY, nextHand.delay());
+        assertTrue(provider.transition(
+                boundary, nextHand.actor(), nextHand.action()).accepted());
+    }
+
+    @Test
     void unsupportedProfilesPlayerCountsAndConfigurationFailClosed() {
         MatchSetup wrongProfile = new MatchSetup(
                 new top.ellan.mahjong.spi.ProfileId("local-house-rule"),
@@ -233,6 +262,30 @@ class McrRulePackProviderTest {
                 new McrMatchAction.Play(new McrRoundAction.SelfDrawWin(Wind.EAST))).state();
         return new McrProviderState(
                 boundary, players.stream().map(MatchPlayer::playerId).toList());
+    }
+
+    private McrProviderState reactingProviderState() {
+        long matchSeed = 0x4d43522d74696d65L;
+        ArrayList<McrTileInstance> order = new ArrayList<>(McrTileInstance.fullSet());
+        place(order, 4, 12);
+        McrRoundState before = McrRoundState.start(
+                McrInitialDealer.deal(McrWall.fromOrder(order)), Wind.EAST);
+        McrRoundState reacting = new McrRoundEngine().transition(
+                before,
+                new McrRoundAction.Discard(Wind.EAST, McrTileInstance.fromId(16))).state();
+        assertEquals(McrRoundPhase.REACTIONS, reacting.phase());
+        McrMatchState match = new McrMatchState(
+                new McrMatchConfig(2),
+                matchSeed,
+                1,
+                McrMatchPhase.HAND_ACTIVE,
+                0,
+                McrMatchState.deriveHandSeed(matchSeed, 0),
+                reacting,
+                McrMatchState.zeroScores(),
+                List.of());
+        return new McrProviderState(
+                match, players.stream().map(MatchPlayer::playerId).toList());
     }
 
     private MatchSetup setup() {

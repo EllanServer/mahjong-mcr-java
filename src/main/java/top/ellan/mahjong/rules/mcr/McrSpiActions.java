@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import top.ellan.mahjong.spi.ActionPresentation;
 import top.ellan.mahjong.spi.LegalAction;
 import top.ellan.mahjong.spi.RuleAction;
@@ -17,16 +18,53 @@ final class McrSpiActions {
             Wind actor,
             McrLegalAction legal) {
         RuleAction action = encodeAction(ids, actor, legal.action());
-        ActionPresentation presentation = action.type().equals("discard")
-                ? ActionPresentation.handTile(
-                        "action.discard",
-                        new top.ellan.mahjong.spi.TileInstanceId(
-                                Byte.toUnsignedInt(action.payload()[0])))
-                : ActionPresentation.actionRow("action." + legal.key());
+        ActionPresentation presentation = presentation(action, legal.action());
         return new LegalAction(
                 legal.key(),
                 action,
                 presentation);
+    }
+
+    private static ActionPresentation presentation(
+            RuleAction encoded, McrRoundAction logical) {
+        if (logical instanceof McrRoundAction.Discard) {
+            return ActionPresentation.handTile(
+                    "action.discard",
+                    new top.ellan.mahjong.spi.TileInstanceId(
+                            Byte.toUnsignedInt(encoded.payload()[0])));
+        }
+        if (logical instanceof McrRoundAction.SelfDrawWin) {
+            return ActionPresentation.actionRow("action.self_draw_win").withEmphasis();
+        }
+        if (logical instanceof McrRoundAction.ConcealedKong kong) {
+            return ActionPresentation.actionRow(
+                    "action.concealed_kong:" + semanticTile(kong.tiles().getFirst().kind()));
+        }
+        if (logical instanceof McrRoundAction.AddedKong kong) {
+            return ActionPresentation.actionRow(
+                    "action.added_kong:" + semanticTile(kong.tile().kind()));
+        }
+        if (logical instanceof McrRoundAction.React respond) {
+            McrReaction reaction = respond.reaction();
+            String actionKey = switch (reaction.type()) {
+                case PASS -> "action.pass";
+                case CHOW -> "action.chow";
+                case PUNG -> "action.pung";
+                case KONG -> "action.direct_kong";
+                case HU -> "action.hu";
+            };
+            StringBuilder label = new StringBuilder(actionKey);
+            for (McrTileInstance tile : reaction.concealedTiles()) {
+                label.append(':').append(semanticTile(tile.kind()));
+            }
+            ActionPresentation result = ActionPresentation.actionRow(label.toString());
+            return reaction.type() == McrReactionType.HU ? result.withEmphasis() : result;
+        }
+        throw new IllegalArgumentException("system MCR action cannot be player-authorized");
+    }
+
+    private static String semanticTile(Tile tile) {
+        return "tile." + tile.name().toLowerCase(Locale.ROOT);
     }
 
     static LegalAction startNextHand() {

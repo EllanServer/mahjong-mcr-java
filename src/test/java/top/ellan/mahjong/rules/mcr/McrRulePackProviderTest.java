@@ -90,7 +90,7 @@ class McrRulePackProviderTest {
         assertEquals(McrRulePackProvider.PROFILE_ID,
                 provider.descriptor().profiles().getFirst().id());
         assertEquals(1, provider.descriptor().stateSchemaVersion());
-        assertEquals(Set.of("assets/mcr/tile-visuals.properties"),
+        assertEquals(Set.of(),
                 provider.descriptor().requiredResources());
 
         Properties manifest = new Properties();
@@ -106,18 +106,9 @@ class McrRulePackProviderTest {
                 manifest.getProperty("requiredCoreVersion"));
         assertEquals(Integer.toString(provider.descriptor().stateSchemaVersion()),
                 manifest.getProperty("stateSchemaVersion"));
-        assertEquals("assets/mcr/tile-visuals.properties",
-                manifest.getProperty("requiredResources"));
+        assertEquals("", manifest.getProperty("requiredResources"));
         assertTrue(McrRulePackProvider.class.getClassLoader().getResource(
-                "assets/mcr/tile-visuals.properties") != null);
-
-        Properties tileVisuals = new Properties();
-        try (InputStream input = McrRulePackProvider.class.getClassLoader()
-                .getResourceAsStream("assets/mcr/tile-visuals.properties")) {
-            assertTrue(input != null);
-            tileVisuals.load(input);
-        }
-        assertEquals("mcr:tile/bamboo", tileVisuals.getProperty("bamboo_flower"));
+                "assets/mcr/tile-visuals.properties") == null);
     }
 
     @Test

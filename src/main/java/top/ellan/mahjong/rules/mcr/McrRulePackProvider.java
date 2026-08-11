@@ -2,7 +2,6 @@ package top.ellan.mahjong.rules.mcr;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -41,7 +40,7 @@ import top.ellan.mahjong.spi.TransitionDisposition;
 public final class McrRulePackProvider implements RulePackProvider {
     public static final RuleId RULE_ID = new RuleId("mcr");
     public static final ProfileId PROFILE_ID = new ProfileId("green-book");
-    public static final String PACK_VERSION = "2.0.1";
+    public static final String PACK_VERSION = "2.0.2";
     public static final String SETUP_SEED_ALGORITHM = "xor-rotate-splitmix64-finalizer-v1";
 
     private static final TileVisualId BACK = new TileVisualId("mcr:tile/back");
@@ -266,8 +265,6 @@ public final class McrRulePackProvider implements RulePackProvider {
     }
 
     private static RulePackDescriptor descriptorValue() {
-        LinkedHashSet<String> resources = new LinkedHashSet<>();
-        resources.add("assets/mcr/tile-visuals.properties");
         String schema = "{\"type\":\"object\",\"properties\":{},"
                 + "\"additionalProperties\":false}";
         return new RulePackDescriptor(
@@ -280,7 +277,7 @@ public final class McrRulePackProvider implements RulePackProvider {
                         PROFILE_ID,
                         "WMO/EMA Green Book (four player)",
                         schema)),
-                Set.copyOf(resources));
+                Set.of());
     }
 
     private static long deriveMatchSeed(MatchSeed seed) {

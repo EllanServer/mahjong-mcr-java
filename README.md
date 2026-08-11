@@ -6,6 +6,16 @@ the first physical-match primitives used by the MahjongPaper 2.0 rule pack.
 The runtime has no third-party dependencies and contains no JNI, JSON, reflection,
 global mutable cache, UI, server, or bot code.
 
+## Release artifacts
+
+Every version publishes a pure `mcr-rule-pack-<version>.jar` and a separate
+`mcr-resource-pack-<version>.zip` in the same release. The JAR contains only rules,
+the ServiceLoader provider and static descriptor. MCR sounds and their attribution
+live only in the resource ZIP; table, chairs and Mahjong tile visuals remain owned
+by the MahjongPaper core plugin. The ZIP payload is a CraftEngine pack, and its
+sound namespace is versioned so CE can keep old and new match generations loaded
+at the same time.
+
 This is an independent implementation library, not an official WMO/EMA-certified
 rules engine. Its pinned normative baseline is the WMO Mahjong Competition Rules
 "Green Book" hosted by EMA, supplemented by the EMA MCR tournament regulations:

@@ -40,7 +40,7 @@ import top.ellan.mahjong.spi.TransitionDisposition;
 public final class McrRulePackProvider implements RulePackProvider {
     public static final RuleId RULE_ID = new RuleId("mcr");
     public static final ProfileId PROFILE_ID = new ProfileId("green-book");
-    public static final String PACK_VERSION = "2.0.2";
+    public static final String PACK_VERSION = "2.0.3";
     public static final String SETUP_SEED_ALGORITHM = "xor-rotate-splitmix64-finalizer-v1";
 
     private static final TileVisualId BACK = new TileVisualId("mcr:tile/back");
@@ -69,9 +69,6 @@ public final class McrRulePackProvider implements RulePackProvider {
         if (setup.players().size() != Wind.values().length) {
             throw new IllegalArgumentException("the Green Book profile requires four players");
         }
-        if (!setup.configuration().isEmpty()) {
-            throw new IllegalArgumentException("the Green Book profile has no house-rule options");
-        }
         PlayerId[] players = new PlayerId[Wind.values().length];
         for (MatchPlayer player : setup.players()) {
             int seat = player.seatId().value();
@@ -85,7 +82,8 @@ public final class McrRulePackProvider implements RulePackProvider {
                 throw new IllegalArgumentException("initial seats 0 through 3 must each be assigned once");
             }
         }
-        McrMatchState match = McrMatchState.start(deriveMatchSeed(setup.seed()));
+        McrMatchConfig config = parseConfiguration(setup.configuration());
+        McrMatchState match = McrMatchState.start(deriveMatchSeed(setup.seed()), config);
         return new McrProviderState(match, List.of(players));
     }
 
@@ -265,7 +263,8 @@ public final class McrRulePackProvider implements RulePackProvider {
     }
 
     private static RulePackDescriptor descriptorValue() {
-        String schema = "{\"type\":\"object\",\"properties\":{},"
+        String schema = "{\"type\":\"object\",\"properties\":{\"handLimit\":"
+                + "{\"type\":\"integer\",\"minimum\":1,\"maximum\":16,\"default\":16}},"
                 + "\"additionalProperties\":false}";
         return new RulePackDescriptor(
                 RULE_ID,
@@ -278,6 +277,23 @@ public final class McrRulePackProvider implements RulePackProvider {
                         "WMO/EMA Green Book (four player)",
                         schema)),
                 Set.of());
+    }
+
+    private static McrMatchConfig parseConfiguration(Map<String, String> configuration) {
+        for (String key : configuration.keySet()) {
+            if (!"handLimit".equals(key)) {
+                throw new IllegalArgumentException("unknown MCR configuration key: " + key);
+            }
+        }
+        String configured = configuration.get("handLimit");
+        if (configured == null) {
+            return McrMatchConfig.standard();
+        }
+        try {
+            return new McrMatchConfig(Integer.parseInt(configured));
+        } catch (NumberFormatException invalid) {
+            throw new IllegalArgumentException("handLimit must be a base-10 integer", invalid);
+        }
     }
 
     private static long deriveMatchSeed(MatchSeed seed) {

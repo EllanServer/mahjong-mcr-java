@@ -280,6 +280,29 @@ class McrRulePackProviderTest {
         assertThrows(IllegalArgumentException.class, () -> provider.createMatch(configured));
     }
 
+    @Test
+    void descriptorExposesHandLimitAndConfigurationIsApplied() {
+        String schema = provider.descriptor().profiles().getFirst().configurationSchemaJson();
+        assertTrue(schema.contains("\"handLimit\""));
+        assertTrue(schema.contains("\"maximum\":16"));
+        assertTrue(schema.contains("\"default\":16"));
+
+        MatchSetup configured = new MatchSetup(
+                McrRulePackProvider.PROFILE_ID,
+                new MatchSeed(1, 2),
+                players,
+                Map.of("handLimit", "2"));
+        McrProviderState state = (McrProviderState) provider.createMatch(configured);
+        assertEquals(2, state.match().config().handLimit());
+
+        MatchSetup invalid = new MatchSetup(
+                McrRulePackProvider.PROFILE_ID,
+                new MatchSeed(1, 2),
+                players,
+                Map.of("handLimit", "seventeen"));
+        assertThrows(IllegalArgumentException.class, () -> provider.createMatch(invalid));
+    }
+
     private McrProviderState boundaryProviderState() {
         long matchSeed = 0x4d43522d73706974L;
         McrMatchState active = new McrMatchState(

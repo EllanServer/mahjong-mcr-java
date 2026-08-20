@@ -34,19 +34,21 @@ public enum Tile {
     private final int index;
     private final Suit suit;
     private final int rank;
-    private final String legacyCode;
+    private final String code;
 
-    Tile(int index, Suit suit, int rank, String legacyCode) {
+    Tile(int index, Suit suit, int rank, String code) {
         this.index = index;
         this.suit = suit;
         this.rank = rank;
-        this.legacyCode = legacyCode;
+        this.code = code;
     }
 
     public int index() { return index; }
     public Suit suit() { return suit; }
     public int rank() { return rank; }
-    public String legacyCode() { return legacyCode; }
+
+    /** Canonical Green Book text code (W/T/B suits, F winds, J dragons, a-h flowers). */
+    public String code() { return code; }
     public boolean isStandard() { return index < STANDARD_KIND_COUNT; }
     public boolean isNumbered() { return suit.isNumbered(); }
     public boolean isHonor() { return suit == Suit.WIND || suit == Suit.DRAGON; }
@@ -63,14 +65,18 @@ public enum Tile {
         return BY_INDEX[index];
     }
 
-    /** Compatibility parser; evaluation itself never parses strings. */
+    /**
+     * Resolves a tile from its Green Book text code or enum name.
+     *
+     * <p>Used by fixtures, gold corpora and diagnostics only; evaluation never parses strings.</p>
+     */
     public static Tile parse(String code) {
         if (code == null || code.isBlank()) {
             throw new IllegalArgumentException("tile code cannot be blank");
         }
         String value = code.trim();
         for (Tile tile : values()) {
-            if (tile.legacyCode.equalsIgnoreCase(value) || tile.name().equalsIgnoreCase(value)) {
+            if (tile.code.equalsIgnoreCase(value) || tile.name().equalsIgnoreCase(value)) {
                 return tile;
             }
         }

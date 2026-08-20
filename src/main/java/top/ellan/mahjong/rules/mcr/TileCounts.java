@@ -110,7 +110,7 @@ public final class TileCounts {
         for (int i = 0; i < counts.length; i++) {
             for (int n = 0; n < counts[i]; n++) {
                 if (!first) result.append(',');
-                result.append(Tile.standard(i).legacyCode());
+                result.append(Tile.standard(i).code());
                 first = false;
             }
         }
